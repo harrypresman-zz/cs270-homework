@@ -12,6 +12,11 @@
 #include "copyright.h"
 #include "system.h"
 
+#ifdef HW1_TIME
+#include <sys/time.h>
+#include <time.h>
+#endif
+
 #if defined HW1_SEMAPHORES || defined HW1_LOCKS
 #include "synch.h"
 #endif
@@ -90,6 +95,7 @@ SimpleThread(int which){
     while(loadDone) currentThread->Yield();
 #endif
 }
+
 #else
 void
 SimpleThread(int which)
@@ -142,6 +148,85 @@ ThreadTest1()
 }
 #endif
 
+
+long elapsedTime(struct timeval start, struct timeval end){
+
+    // calculate time in microseconds
+    long tS = start.tv_sec*1000000 + (start.tv_usec);
+    long tE = end.tv_sec*1000000  + (end.tv_usec);
+    return tE - tS ;
+}
+
+int switchCount;
+
+void TimingThreadSwitch(int size){
+    char *temp = new char[size];
+    int x;
+    
+    for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
+//        for(int x = 0; x < size; x++ ){
+            time_t t = time(NULL);
+            char c = temp[x];
+            temp[x] = c++;
+            switchCount++;
+            currentThread->Yield();          
+//        }       
+    }
+    currentThread->Yield();
+    switchCount++;
+}
+
+void TimingThreadNoSwitch(int size){
+    char *temp = new char[size];
+    int x;
+    
+    for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
+//        for(int x = 0; x < size; x++ ){
+            time_t t = time(NULL);
+            char c = temp[x];
+            temp[x] = c++;
+//        }        
+    }
+    currentThread->Yield();
+    switchCount++;
+}
+
+void TimingThreadTest(int size){
+    
+    Thread *t = new Thread("forked thread");
+
+    struct timeval start,end;
+    gettimeofday(&start,NULL);
+    
+    t->Fork(TimingThreadSwitch, size);
+    TimingThreadSwitch(size);
+    
+    currentThread->Yield();
+    
+    gettimeofday(&end,NULL);
+    long switchTime = elapsedTime(start,end);  
+    
+    printf("\n");
+    int oldSwitches = switchCount;
+    switchCount = 0;
+    t = new Thread("forked thread");
+
+    gettimeofday(&start,NULL);
+    
+    t->Fork(TimingThreadNoSwitch, size);
+    TimingThreadNoSwitch(size);
+    
+    currentThread->Yield();
+    
+    gettimeofday(&end,NULL);
+    long noSwitchTime = elapsedTime(start,end);  
+    
+    double aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
+    
+    printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
+    printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+}
+
 //----------------------------------------------------------------------
 // ThreadTest
 // 	Invoke a test routine.
@@ -150,10 +235,18 @@ ThreadTest1()
 void
 ThreadTest(int n)
 {
-    Test();
     switch (testnum) {
     case 1:
+        #ifdef HW1_TIME        
+        TimingThreadTest(1024);
+//        TimingThreadTest(1024, 1000);
+        TimingThreadTest(262144);
+//        TimingThreadTest(262144, 1000);
+        TimingThreadTest(8388608);
+//        TimingThreadTest(8388608, 1000);
+        #else
         ThreadTest1(n);
+        #endif
         break;
     default:
         printf("No test specified.\n");
