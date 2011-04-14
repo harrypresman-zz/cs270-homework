@@ -79,9 +79,9 @@ class Lock {
 
   private:
     char* name;				// for debugging
-    int value;         // lock value, always 1 or 0
+    bool locked;         // lock value, always 1 or 0
     Thread* owner;
-    List *queue;       // threads waiting in Aquire() for the value to be > 0
+    List* queue;       // threads waiting in Aquire() for the value to be > 0
 };
 
 // The following class defines a "condition variable".  A condition
@@ -133,6 +133,20 @@ class Condition {
 
   private:
     char* name;
+    List* queue;
     // plus some other stuff you'll need to define
 };
+
+class Barrier{
+    public:
+        Barrier(char* debugName, int n);
+        ~Barrier();
+        void block();
+    private:
+        char* name;
+        List* queue;
+        int blockUntil;
+        int blockCount;
+};
+
 #endif // SYNCH_H

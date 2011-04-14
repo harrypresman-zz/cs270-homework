@@ -1,4 +1,4 @@
-// threadtest.cc 
+	// threadtest.cc 
 //	Simple test case for the threads assignment.
 //
 //	Create two threads, and have them context switch
@@ -12,14 +12,9 @@
 #include "copyright.h"
 #include "system.h"
 
-#if defined HW1_SEMAPHORES || defined HW1_LOCKS
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS || defined HW1_CV
 #include "synch.h"
 #endif
-
-void Test(){
-    int i;
-    printf("Hello");
-}
 
 // testnum is set in main.cc
 int testnum = 1;
@@ -33,71 +28,96 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
-#ifdef HW1_SEMAPHORES
-Semaphore *s;
-int loadCount, numThreads;
-bool loadDone;
-#elif defined HW1_LOCKS
+#if defined THREADS && defined CHANGED
+int SharedVariable; 
+
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS || defined HW1_CV
+Barrier *barrier;
 Lock *l;
-int loadCount, numThreads;
-bool loadDone;
+Condition *c;
+Semaphore *s;
 #endif
 
-#if defined CHANGED && defined THREADS
-int SharedVariable;
+#ifdef HW1_CV
+void SignalThread(int which){ 
+	int num, val=0;
+	for(num = 0; num < 3; num++){ 
+		currentThread->Yield(); 
 
-void
-SimpleThread(int which){
-    int num, val;
-    
-    for (num = 0; num < 5; num++) {
-#ifdef HW1_SEMAPHORES
-        s->P();
-#elif defined HW1_LOCKS
+		val = SharedVariable; 
+		printf("*** SIGNAL thread %d sees value %d\n", which, val); 
+		SharedVariable = val+1; 
+
+		currentThread->Yield();
+	}   
+
+    l->Acquire();
+    c->Signal(l);
+    l->Release();  
+}
+
+void CondThread(int which){ 
+	int num, val;
+	
+    l->Acquire();
+	c->Wait(l);
+    l->Release(); 
+	for(num = 0; num < 5; num++){ 
+		currentThread->Yield(); 
         l->Acquire();
-#endif
-        val = SharedVariable;
-	    printf("*** thread %d sees value %d\n", which, val);
-        currentThread->Yield();
+  	
+		val = SharedVariable; 
+		printf("*** COND thread %d sees value %d\n", which, val); 
+		SharedVariable = val+1; 
+        l->Release(); 
+		currentThread->Yield();
+	}
+	l->Acquire();
+	c->Signal(l);
+	l->Release(); 
+	
+	barrier->block();
+	val = SharedVariable; 
+	printf("Thread %d sees final value %d\n", which, val); 
+	barrier->block();
+}
+#endif  // end of CV
 
-        SharedVariable = val + 1;
-
+void SimpleThread(int which){ 
+	int num, val; 
+	for(num = 0; num < 5; num++){
 #ifdef HW1_SEMAPHORES
-        s->V();
+		s->P();
 #elif defined HW1_LOCKS
-        l->Release();
+		l->Acquire();
 #endif
-        currentThread->Yield();
-    }
-#if defined HW1_SEMAPHORES || defined HW1_LOCKS
-    loadCount--;
-    if(loadCount == 0){
-        loadCount = numThreads;
-        loadDone = !loadDone;
-    }
-    //Load barrier
-    while(!loadDone) currentThread->Yield();
+	    val = SharedVariable;
+	    printf("*** thread %d sees value %d\n", which, val); 
+	    currentThread->Yield(); 
+	    SharedVariable = val+1; 
+#ifdef HW1_SEMAPHORES
+		s->V();
+#elif defined HW1_LOCKS
+		l->Release();
 #endif
-    val = SharedVariable;
-    printf("Thread %d sees final value %d\n", which, val);
+	    currentThread->Yield();
+	}
 #if defined HW1_SEMAPHORES || defined HW1_LOCKS
-    loadCount--;
-    if(loadCount == 0){
-        loadCount = numThreads;
-        loadDone = !loadDone;
-    }
-    //Load barrier
-    while(loadDone) currentThread->Yield();
+	barrier->block();
+#endif
+	val = SharedVariable; 
+	printf("Thread %d sees final value %d\n", which, val); 
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS
+	barrier->block();
 #endif
 }
-#else
-void
-SimpleThread(int which)
-{
+
+#else  // not changed or threads
+void SimpleThread(int which){
     int num;
     
     for (num = 0; num < 5; num++) {
-        printf("*** thread %d looped %d times\n", which, num);
+	    printf("*** thread %d looped %d times\n", which, num);
         currentThread->Yield();
     }
 }
@@ -108,31 +128,35 @@ SimpleThread(int which)
 // 	Set up a ping-pong between two threads, by forking a thread 
 //	to call SimpleThread, and then calling SimpleThread ourselves.
 //----------------------------------------------------------------------
-
-#if defined CHANGED && defined THREADS
-void
-ThreadTest1(int n){
+#if defined THREADS && defined CHANGED 
+#ifdef HW1_CV 
+void ThreadTest1(int n){
     DEBUG('t', "Entering ThreadTest1");
-#ifdef HW1_SEMAPHORES
-    s = new Semaphore("s", 1);
-    loadCount = numThreads = n + 1;
-    loadDone = false;
-#elif defined HW1_LOCKS
-    l = new Lock("l");
-    loadCount = numThreads = n + 1;
-    loadDone = false;
-#endif
-    int i = 1;
-    for( i; i <= n; i++){
-        Thread *t = new Thread("forked thread");
-        t->Fork(SimpleThread, i);
-    }
-    SimpleThread(0);
+    l = new Lock("lock");
+    c = new Condition("Cond");
+	for(int i = 1; i <= n; i++){
+	  	Thread *t = new Thread("forked thread");
+    	t->Fork(CondThread, i);
+	}
+	currentThread->Yield();
+    l->Acquire(); 
+	SignalThread(0);
 }
+
 #else
-void
-ThreadTest1()
-{
+void ThreadTest1(int n){
+    DEBUG('t', "Entering ThreadTest1");
+
+	for(int i = 1; i <= n; i++){
+	  	Thread *t = new Thread("forked thread");
+    	t->Fork(SimpleThread, i);
+	}
+   
+	SimpleThread(0);
+}
+#endif  // not cv, semaphores or locks
+#else   // not changed or not threads
+void ThreadTest1(){
     DEBUG('t', "Entering ThreadTest1");
 
     Thread *t = new Thread("forked thread");
@@ -147,30 +171,32 @@ ThreadTest1()
 // 	Invoke a test routine.
 //----------------------------------------------------------------------
 #if defined CHANGED && defined THREADS
-void
-ThreadTest(int n)
-{
-    Test();
+void ThreadTest(int n){
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS || defined HW1_CV
+	barrier = new Barrier("Barrier", n+1);
+	s = new Semaphore("semaphore", 1);
+	l = new Lock("lock");
+#endif
     switch (testnum) {
     case 1:
-        ThreadTest1(n);
-        break;
+	    ThreadTest1(n);
+	    break;
     default:
-        printf("No test specified.\n");
-        break;
+	    printf("No test specified.\n");
+	    break;
     }
 }
 #else
-void
-ThreadTest()
-{
+void ThreadTest(){
     switch (testnum) {
     case 1:
-	ThreadTest1();
-	break;
+	    ThreadTest1();
+	    break;
     default:
-	printf("No test specified.\n");
-	break;
+	    printf("No test specified.\n");
+	    break;
     }
 }
 #endif
+
+
