@@ -60,7 +60,7 @@ extern int testnum;
 // External functions used by this file
 #ifdef CHANGED && THREADS
 extern void ThreadTest(int n), Copy(char *unixFile, char *nachosFile);
-extern void Test();
+extern void ThreadTest1(int n), SignalThread(int), CondThread(int); 
 #else
 extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
 #endif
@@ -105,9 +105,10 @@ main(int argc, char **argv)
       }
     }
 #ifdef CHANGED
-    for(int i = 0; i <= 4; i++){
-        ThreadTest(i);
-    }
+//    for(int i = 0; i <= 4; i++){
+//        ThreadTest(i);
+//    }
+    ThreadTest(3);
 #else
     ThreadTest();
 #endif
