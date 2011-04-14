@@ -104,11 +104,12 @@ main(int argc, char **argv)
         break;
       }
     }
-#ifdef CHANGED
-//    for(int i = 0; i <= 4; i++){
-//        ThreadTest(i);
-//    }
-    ThreadTest(3);
+#ifdef CHANGED and defined HW1_TIME
+  ThreadTest(0);
+#elif defined CHANGED
+    for(int i = 0; i <= 4; i++){
+        ThreadTest(i);
+    }
 #else
     ThreadTest();
 #endif
