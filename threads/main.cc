@@ -82,9 +82,7 @@ extern void MailTest(int networkID);
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 //----------------------------------------------------------------------
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv){
     int argCount;			// the number of arguments 
 					// for a particular command
 
@@ -104,9 +102,9 @@ main(int argc, char **argv)
         break;
       }
     }
-#ifdef CHANGED and defined HW1_TIME
+#if defined CHANGED && defined HW1_TIME
   ThreadTest(0);
-#elif defined CHANGED
+#elif defined CHANGED 
     for(int i = 0; i <= 4; i++){
         ThreadTest(i);
     }

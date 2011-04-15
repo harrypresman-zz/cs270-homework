@@ -1,4 +1,4 @@
-	// threadtest.cc 
+// threadtest.cc 
 //	Simple test case for the threads assignment.
 //
 //	Create two threads, and have them context switch
@@ -17,7 +17,7 @@
 #include <time.h>
 #endif
 
-#if defined HW1_SEMAPHORES || defined HW1_LOCKS
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS || defined HW1_CV
 #include "synch.h"
 #endif
 
@@ -37,10 +37,10 @@ int testnum = 1;
 int SharedVariable; 
 
 #if defined HW1_SEMAPHORES || defined HW1_LOCKS || defined HW1_CV
-Barrier *barrier;
-Lock *l;
-Condition *c;
-Semaphore *s;
+Barrier* barrier;
+Lock* l;
+Condition* c;
+Semaphore* s;
 #endif
 
 #ifdef HW1_CV
@@ -137,6 +137,7 @@ void SimpleThread(int which){
 #ifdef HW1_CV 
 void ThreadTest1(int n){
     DEBUG('t', "Entering ThreadTest1");
+    barrier = new Barrier("b", n+1);
     l = new Lock("lock");
     c = new Condition("Cond");
 	for(int i = 1; i <= n; i++){
@@ -151,7 +152,11 @@ void ThreadTest1(int n){
 #else
 void ThreadTest1(int n){
     DEBUG('t', "Entering ThreadTest1");
-
+#if defined HW1_SEMAPHORES || defined HW1_LOCKS
+    s = new Semaphore("s", 1);
+    l = new Lock("l");
+    barrier = new Barrier("b", n+1);
+#endif
 	for(int i = 1; i <= n; i++){
 	  	Thread *t = new Thread("forked thread");
     	t->Fork(SimpleThread, i);
@@ -171,7 +176,7 @@ void ThreadTest1(){
 }
 #endif
 
-
+#ifdef HW1_TIME
 long elapsedTime(struct timeval start, struct timeval end){
 
     // calculate time in microseconds
@@ -182,18 +187,44 @@ long elapsedTime(struct timeval start, struct timeval end){
 
 int switchCount;
 
+void TimingThreadSwitchNoJump(int size){
+    char *temp = new char[size];
+    int x;
+    
+    for (int num = 0; num < 1000000; num++ ){
+            time_t t = time(NULL);
+            char c = temp[num%size];
+            temp[num%size] = c++;
+            switchCount++;
+            currentThread->Yield();          
+    }
+    currentThread->Yield();
+    switchCount++;
+}
+
+void TimingThreadNoSwitchNoJump(int size){
+    char *temp = new char[size];
+    int x;
+    
+    for (int num = 0; num < 1000000; num++ ){
+            char c = temp[num%size];
+            temp[num%size] = c++;
+            switchCount++;
+    }
+    currentThread->Yield();
+    switchCount++;
+}
+
 void TimingThreadSwitch(int size){
     char *temp = new char[size];
     int x;
     
     for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-//        for(int x = 0; x < size; x++ ){
             time_t t = time(NULL);
             char c = temp[x];
             temp[x] = c++;
             switchCount++;
             currentThread->Yield();          
-//        }       
     }
     currentThread->Yield();
     switchCount++;
@@ -204,11 +235,9 @@ void TimingThreadNoSwitch(int size){
     int x;
     
     for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-//        for(int x = 0; x < size; x++ ){
             time_t t = time(NULL);
             char c = temp[x];
             temp[x] = c++;
-//        }        
     }
     currentThread->Yield();
     switchCount++;
@@ -248,7 +277,41 @@ void TimingThreadTest(int size){
     
     printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
     printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+    
+    t = new Thread("forked thread");
+
+    gettimeofday(&start,NULL);
+    
+    t->Fork(TimingThreadSwitchNoJump, size);
+    TimingThreadSwitchNoJump(size);
+    
+    currentThread->Yield();
+    
+    gettimeofday(&end,NULL);
+    switchTime = elapsedTime(start,end);  
+    
+    printf("\n");
+    oldSwitches = switchCount;
+    switchCount = 0;
+    t = new Thread("forked thread");
+
+    gettimeofday(&start,NULL);
+    
+    t->Fork(TimingThreadNoSwitchNoJump, size);
+    TimingThreadNoSwitchNoJump(size);
+    
+    currentThread->Yield();
+    
+    gettimeofday(&end,NULL);
+    noSwitchTime = elapsedTime(start,end);  
+    
+    aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
+    
+    printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
+    printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+
 }
+#endif
 
 //----------------------------------------------------------------------
 // ThreadTest
