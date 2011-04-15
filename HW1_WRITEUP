@@ -1,5 +1,7 @@
 1) Aaron Elmore and Harry Presman. We can attend Friday office hours (3-4) together.
+
 2) Everything is completed as asked, and everything is working to our understanding of the requirements.. We have implemented steps 1-4.
+
 3) 
   For HW1-1) We added semaphores to the thread loops so that in order to read and increment the shared variable a semaphore must be acquired first, and released after modification. Threadtest is extended to use locks on the HW1_SEMAPHORE definition.
   
@@ -11,8 +13,101 @@
   
   For HW1-3) We implemented a condition in the mesa style, that requires a thread a to acquire a lock in order to register itself as a waiting thread. Once a thread registers to wait it is put to sleep and awaits to be waken, in which it attempts to acquire the lock. The thread that holds the condition can signal to wake a single thread or broadcast to wake threads, that will then contend for the lock.  We created a new test for condition where a single thread makes progress incrementing a shared variable in a loop, then begins a cascade of threads signaling other threads to begin incrementing once awaken.
   
-  For HW1-4) We measure the overhead cost of a context switch by having two threads allocate a large space of memory/array, then make a fixed number of switches, each time reading a set amount of the array [SIZE].  We then have two threads iterate through the array the same number of times with the same operations, but with no context switches, in order to measure the baseline cost of the algorithm. We then subtract the baseline, from the time of the algorithm with context switches to estimate the overhead time due to switching. Each thread measures the total number of switches, and the wrapper function measures the time of completion for both threads.  We use these numbers (half of switches due to double counting) to find the average context switch cost.  We then increment size to measure the increased cost due to increased cache eviction between threads (ie each threads is accessing more data, which pushes out the data that could have potentially been used by the next thread on a yield. smaller data accesses leave more cache intact for the thread allowing for greater leverage of caches).   See the end of the file for our measurements. We used the time package
+  For HW1-4) We measure the overhead cost of a context switch by having two threads allocate a large space of memory/array, then make a fixed number of switches, each time reading a set amount of the array [SIZE].  We then have two threads iterate through the array the same number of times with the same operations, but with no context switches, in order to measure the baseline cost of the algorithm. We then subtract the baseline, from the time of the algorithm with context switches to estimate the overhead time due to switching. Each thread measures the total number of switches, and the wrapper function measures the time of completion for both threads.  We use these numbers (half of switches due to double counting) to find the average context switch cost.  We then increment size to measure the increased cost due to increased cache eviction between threads (ie each threads is accessing more data, which pushes out the data that could have potentially been used by the next thread on a yield. smaller data accesses leave more cache intact for the thread allowing for greater leverage of caches).   See the end of the file for our measurements. We used the time package.
   
-4) We have modified Sync.h to include the prototype for our barrier. Sync.cc to include the implementations of locks, conditions and barrier. Threadtest.cc for our implementation of tests for parts 1-4. Makefile was modified to allow for 64bit compilation and clean up of .o file in the threads directory.
+4) We have modified Synch.h to include the prototype for our barrier, Synch.cc to include the implementations of locks, conditions and barrier, Threadtest.cc for our implementation of tests for parts 1-4. The Makefile was modified to allow for 64bit compilation and clean up of .o file in the threads directory.
 
 5)
+
+
+
+harry@harry-ubuntu:~/cs270$ threads/nachos 
+
+1024 size
+101 switches, 109030 switch time, 64363 no switch time, 44667 us
+101 switches took an average of 442.25 us
+
+8196 size
+102 switches, 654719 switch time, 337190 no switch time, 317529 us
+102 switches took an average of 3113.03 us
+
+16392 size
+102 switches, 1255259 switch time, 656160 no switch time, 599099 us
+102 switches took an average of 5873.52 us
+
+32784 size
+102 switches, 2496884 switch time, 1284560 no switch time, 1212324 us
+102 switches took an average of 11885.53 us
+
+131136 size
+102 switches, 9740240 switch time, 4930261 no switch time, 4809979 us
+102 switches took an average of 47156.66 us
+
+262144 size
+102 switches, 19445483 switch time, 9755250 no switch time, 9690233 us
+102 switches took an average of 95002.28 us
+
+2097152 size
+102 switches, 157958718 switch time, 78593375 no switch time, 79365343 us
+102 switches took an average of 778091.60 us
+
+8388608 size
+102 switches, 633204901 switch time, 316470978 no switch time, 316733923 us
+102 switches took an average of 3105234.54 us
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+Machine halting!
+
+Ticks: total 16810, idle 0, system 16810, user 0
+Disk I/O: reads 0, writes 0
+Console I/O: reads 0, writes 0
+Paging: faults 0
+Network I/O: packets received 0, sent 0
+
+Cleaning up...
+
+harry@harry-ubuntu:~/cs270$ threads/nachos 
+
+1024 size
+9767 switches, 366872 switch time, 203994 no switch time, 162878 us
+9767 switches took an average of 16.68 us
+
+8196 size
+1223 switches, 353252 switch time, 203345 no switch time, 149907 us
+1223 switches took an average of 122.57 us
+
+16392 size
+613 switches, 343640 switch time, 212039 no switch time, 131601 us
+613 switches took an average of 214.68 us
+
+32784 size
+308 switches, 345382 switch time, 196974 no switch time, 148408 us
+308 switches took an average of 481.84 us
+
+131136 size
+79 switches, 250909 switch time, 208126 no switch time, 42783 us
+79 switches took an average of 541.56 us
+
+262144 size
+41 switches, 254292 switch time, 197500 no switch time, 56792 us
+41 switches took an average of 1385.17 us
+
+2097152 size
+7 switches, 250990 switch time, 206116 no switch time, 44874 us
+7 switches took an average of 6410.57 us
+
+8388608 size
+4 switches, 249837 switch time, 198012 no switch time, 51825 us
+4 switches took an average of 12956.25 us
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+Machine halting!
+
+Ticks: total 241350, idle 0, system 241350, user 0
+Disk I/O: reads 0, writes 0
+Console I/O: reads 0, writes 0
+Paging: faults 0
+Network I/O: packets received 0, sent 0
+
+Cleaning up...
+

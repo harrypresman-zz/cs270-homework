@@ -188,7 +188,7 @@ long elapsedTime(struct timeval start, struct timeval end){
 int switchCount;
 #define EIGHT 8388608
 
-void TimingThreadSwitchNoJump(int size){
+void SwitchingOnNumber(int size){
 	char* temp = new char[EIGHT];
 	int num = 0, counter = 0;
 
@@ -206,7 +206,7 @@ void TimingThreadSwitchNoJump(int size){
 	currentThread->Yield();
 }
 
-void TimingThreadNoSwitchNoJump(int size){
+void SwitchingOffNumber(int size){
 	char *temp = new char[EIGHT];
 	int num = 0, counter = 0;
 
@@ -224,43 +224,42 @@ void TimingThreadNoSwitchNoJump(int size){
 
 }
 
-void TimingThreadSwitch(int size){
-	char *temp = new char[size];
-	int x;
+void SwitchingOnSize(int size){
+	char *temp = new char[EIGHT];
 
-	for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-		time_t t = time(NULL);
-		char c = temp[x];
-		temp[x] = ++c;
-		switchCount++;
-		currentThread->Yield();          
+	for(int num = 0; num < 10000000; num++) {
+		char c = temp[num%EIGHT];
+		if( num%size == 0){
+			switchCount++;
+			currentThread->Yield();          
+		}
 	}
 	currentThread->Yield();
 	switchCount++;
 }
 
-void TimingThreadNoSwitch(int size){
-	char *temp = new char[size];
-	int x;
+void SwitchingOffSize(int size){
+	char *temp = new char[EIGHT];
 
-	for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-		time_t t = time(NULL);
-		char c = temp[x];
-		temp[x] = ++c;
+	for(int num = 0; num < 10000000; num++) {
+		char c = temp[num%EIGHT];
+		if( num%size == 0){
+			// nop
+		}
 	}
 	currentThread->Yield();
 	switchCount++;
 }
 
-void TimingThreadTest(int size){
+void TimingThreadTest1(int size){
 
 	Thread *t = new Thread("forked thread");
 
 	struct timeval start,end;
 	gettimeofday(&start,NULL);
 
-	t->Fork(TimingThreadSwitchNoJump, size);
-	TimingThreadSwitchNoJump(size);
+	t->Fork(SwitchingOnNumber, size);
+	SwitchingOnNumber(size);
 
 	currentThread->Yield();
 
@@ -274,8 +273,8 @@ void TimingThreadTest(int size){
 
 	gettimeofday(&start,NULL);
 
-	t->Fork(TimingThreadNoSwitchNoJump, size);
-	TimingThreadNoSwitchNoJump(size);
+	t->Fork(SwitchingOffNumber, size);
+	SwitchingOffNumber(size);
 
 	currentThread->Yield();
 
@@ -288,39 +287,46 @@ void TimingThreadTest(int size){
 	printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", 
 		oldSwitches/2, switchTime, noSwitchTime, switchTime - noSwitchTime);  
 	printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
-/*
-	t = new Thread("forked thread");
 
+}
+
+void TimingThreadTest2(int size){
+
+	Thread *t = new Thread("forked thread");
+
+	struct timeval start,end;
 	gettimeofday(&start,NULL);
 
-	t->Fork(TimingThreadSwitchNoJump, size);
-	TimingThreadSwitchNoJump(size);
+	t->Fork(SwitchingOnSize, size);
+	SwitchingOnSize(size);
 
 	currentThread->Yield();
 
 	gettimeofday(&end,NULL);
-	switchTime = elapsedTime(start,end);  
+	long switchTime = elapsedTime(start,end);  
 
 	printf("\n");
-	oldSwitches = switchCount;
+	int oldSwitches = switchCount;
 	switchCount = 0;
 	t = new Thread("forked thread");
 
 	gettimeofday(&start,NULL);
 
-	t->Fork(TimingThreadNoSwitchNoJump, size);
-	TimingThreadNoSwitchNoJump(size);
+	t->Fork(SwitchingOffSize, size);
+	SwitchingOffSize(size);
 
 	currentThread->Yield();
 
 	gettimeofday(&end,NULL);
-	noSwitchTime = elapsedTime(start,end);  
+	long noSwitchTime = elapsedTime(start,end);  
 
-	aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
+	double aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
 
-	printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
+	printf("%d size\n", size);
+	printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", 
+		oldSwitches/2, switchTime, noSwitchTime, switchTime - noSwitchTime);  
 	printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
-*/
+
 }
 #endif
 
@@ -333,17 +339,25 @@ void ThreadTest(int n){
 	switch (testnum) {
 		case 1:
 #ifdef HW1_TIME        
-			TimingThreadTest(1024);
-			TimingThreadTest(8196);
-			TimingThreadTest(8196*2);
-			TimingThreadTest(8196*4);
-			TimingThreadTest(8196*16);
-			//        TimingThreadTest(1024, 1000);
-			TimingThreadTest(262144);
-			TimingThreadTest(262144*8);
-			//        TimingThreadTest(262144, 1000);
-			TimingThreadTest(8388608);
-			//        TimingThreadTest(8388608, 1000);
+/*
+			TimingThreadTest1(1024);
+			TimingThreadTest1(8196);
+			TimingThreadTest1(8196*2);
+			TimingThreadTest1(8196*4);
+			TimingThreadTest1(8196*16);
+			TimingThreadTest1(262144);
+			TimingThreadTest1(262144*8);
+			TimingThreadTest1(8388608);
+*/
+			TimingThreadTest2(1024);
+			TimingThreadTest2(8196);
+			TimingThreadTest2(8196*2);
+			TimingThreadTest2(8196*4);
+			TimingThreadTest2(8196*16);
+			TimingThreadTest2(262144);
+			TimingThreadTest2(262144*8);
+			TimingThreadTest2(8388608);
+
 #else
 			ThreadTest1(n);
 #endif
