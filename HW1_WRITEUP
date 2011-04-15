@@ -1,0 +1,18 @@
+1) Aaron Elmore and Harry Presman. We can attend Friday office hours (3-4) together.
+2) Everything is completed as asked, and everything is working to our understanding of the requirements.. We have implemented steps 1-4.
+3) 
+  For HW1-1) We added semaphores to the thread loops so that in order to read and increment the shared variable a semaphore must be acquired first, and released after modification. Threadtest is extended to use locks on the HW1_SEMAPHORE definition.
+  
+  We implemented a barrier to ensure that all threads reach the barrier before printing the final result. The barrier puts a thread to sleep and wakes all when the n threads have reached.
+  
+  Modified Main to test for 0-4 threads.
+  
+  For HW1-2) We implemented a lock fashioned after the semaphore, but instead of a counter for the resource a boolean must be set. On release we check if the current thread is the owner. Threadtest is extended to use locks on the HW1_LOCKS definition.
+  
+  For HW1-3) We implemented a condition in the mesa style, that requires a thread a to acquire a lock in order to register itself as a waiting thread. Once a thread registers to wait it is put to sleep and awaits to be waken, in which it attempts to acquire the lock. The thread that holds the condition can signal to wake a single thread or broadcast to wake threads, that will then contend for the lock.  We created a new test for condition where a single thread makes progress incrementing a shared variable in a loop, then begins a cascade of threads signaling other threads to begin incrementing once awaken.
+  
+  For HW1-4) We measure the overhead cost of a context switch by having two threads allocate a large space of memory/array, then make a fixed number of switches, each time reading a set amount of the array [SIZE].  We then have two threads iterate through the array the same number of times with the same operations, but with no context switches, in order to measure the baseline cost of the algorithm. We then subtract the baseline, from the time of the algorithm with context switches to estimate the overhead time due to switching. Each thread measures the total number of switches, and the wrapper function measures the time of completion for both threads.  We use these numbers (half of switches due to double counting) to find the average context switch cost.  We then increment size to measure the increased cost due to increased cache eviction between threads (ie each threads is accessing more data, which pushes out the data that could have potentially been used by the next thread on a yield. smaller data accesses leave more cache intact for the thread allowing for greater leverage of caches).   See the end of the file for our measurements. We used the time package
+  
+4) We have modified Sync.h to include the prototype for our barrier. Sync.cc to include the implementations of locks, conditions and barrier. Threadtest.cc for our implementation of tests for parts 1-4. Makefile was modified to allow for 64bit compilation and clean up of .o file in the threads directory.
+
+5)
