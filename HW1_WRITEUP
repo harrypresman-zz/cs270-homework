@@ -8,6 +8,25 @@
   We implemented a barrier to ensure that all threads reach the barrier before printing the final result. The barrier puts a thread to sleep and wakes all when the n threads have reached.
   
   Modified Main to test for 0-4 threads.
+
+
+EXPLANATION OF RESULTS : With no locking or semaphors this is a simulated race condition where each thread yields after reading the value, yields after incrementing and yields after writing the value. This causes every thread to overwrite work done by other threads. Without reseting the value we see different operations of Thread constantly incrementing. So with two threads (ie parm of 1 starting at 5 from a single thread) we see:
+*** thread 0 sees value 5
+*** thread 1 sees value 5
+*** thread 0 sees value 6
+*** thread 1 sees value 6
+*** thread 0 sees value 7
+*** thread 1 sees value 7
+*** thread 0 sees value 8
+*** thread 1 sees value 8
+*** thread 0 sees value 9
+*** thread 1 sees value 9
+Thread 0 sees final value 10
+*** thread 0 sees value 10
+Thread 1 sees final value 10
+*** thread 1 sees value 10
+
+
   
   For HW1-2) We implemented a lock fashioned after the semaphore, but instead of a counter for the resource a boolean must be set. On release we check if the current thread is the owner. Threadtest is extended to use locks on the HW1_LOCKS definition.
   
@@ -19,9 +38,81 @@
 
 5)
 
+Compile with gmake then run with threads/nachos 
+
+Makefile has the defined commented out. Renable with either HW1_SEMAPHORE, HW1_LOCKS, HW1_CV, HW1_TIME
+
+SEMAPHORE RESULTS with ThreadTest(1) (ie 2 threads) 
+
+*** thread 0 sees value 0
+*** thread 1 sees value 1
+*** thread 0 sees value 2
+*** thread 1 sees value 3
+*** thread 0 sees value 4
+*** thread 1 sees value 5
+*** thread 0 sees value 6
+*** thread 1 sees value 7
+*** thread 0 sees value 8
+*** thread 1 sees value 9
+Thread 1 sees final value 10
+Thread 0 sees final value 10
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+Machine halting!
+
+Ticks: total 470, idle 0, system 470, user 0
+Disk I/O: reads 0, writes 0
+Console I/O: reads 0, writes 0
+Paging: faults 0
 
 
-harry@harry-ubuntu:~/cs270$ threads/nachos 
+LOCKINGS RESULTS WITH ThreadTest(1)
+
+*** thread 0 sees value 0
+*** thread 1 sees value 1
+*** thread 0 sees value 2
+*** thread 1 sees value 3
+*** thread 0 sees value 4
+*** thread 1 sees value 5
+*** thread 0 sees value 6
+*** thread 1 sees value 7
+*** thread 0 sees value 8
+*** thread 1 sees value 9
+Thread 1 sees final value 10
+Thread 0 sees final value 10
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+Machine halting!
+
+Ticks: total 470, idle 0, system 470, user 0
+Disk I/O: reads 0, writes 0
+Console I/O: reads 0, writes 0
+Paging: faults 0
+Network I/O: packets received 0, sent 0
+
+CONDITION TEST (compile with HW1_CV set) ThreadTest(3) with SIGNAL 
+
+*** SIGNAL thread 0 sees value 0
+*** SIGNAL thread 0 sees value 1
+*** SIGNAL thread 0 sees value 2
+*** COND thread 1 sees value 3
+*** COND thread 1 sees value 4
+*** COND thread 1 sees value 5
+*** COND thread 1 sees value 6
+*** COND thread 1 sees value 7
+*** COND thread 2 sees value 8
+*** COND thread 2 sees value 9
+*** COND thread 2 sees value 10
+*** COND thread 2 sees value 11
+*** COND thread 2 sees value 12
+*** COND thread 3 sees value 13
+*** COND thread 3 sees value 14
+*** COND thread 3 sees value 15
+*** COND thread 3 sees value 16
+*** COND thread 3 sees value 17
+
+
+TIMING RESULTS compile HW1_TIME set
 
 1024 size
 101 switches, 109030 switch time, 64363 no switch time, 44667 us
