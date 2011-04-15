@@ -56,31 +56,31 @@ void SignalThread(int which){
 		currentThread->Yield();
 	}   
 
-    l->Acquire();
-    c->Signal(l);
-    l->Release();  
+	l->Acquire();
+	c->Signal(l);
+	l->Release();  
 }
 
 void CondThread(int which){ 
 	int num, val;
-	
-    l->Acquire();
+
+	l->Acquire();
 	c->Wait(l);
-    l->Release(); 
+	l->Release(); 
 	for(num = 0; num < 5; num++){ 
 		currentThread->Yield(); 
-        l->Acquire();
-  	
+		l->Acquire();
+
 		val = SharedVariable; 
 		printf("*** COND thread %d sees value %d\n", which, val); 
 		SharedVariable = val+1; 
-        l->Release(); 
+		l->Release(); 
 		currentThread->Yield();
 	}
 	l->Acquire();
 	c->Signal(l);
 	l->Release(); 
-	
+
 	barrier->block();
 	val = SharedVariable; 
 	printf("Thread %d sees final value %d\n", which, val); 
@@ -96,16 +96,16 @@ void SimpleThread(int which){
 #elif defined HW1_LOCKS
 		l->Acquire();
 #endif
-	    val = SharedVariable;
-	    printf("*** thread %d sees value %d\n", which, val); 
-	    currentThread->Yield(); 
-	    SharedVariable = val+1; 
+		val = SharedVariable;
+		printf("*** thread %d sees value %d\n", which, val); 
+		currentThread->Yield(); 
+		SharedVariable = val+1; 
 #ifdef HW1_SEMAPHORES
 		s->V();
 #elif defined HW1_LOCKS
 		l->Release();
 #endif
-	    currentThread->Yield();
+		currentThread->Yield();
 	}
 #if defined HW1_SEMAPHORES || defined HW1_LOCKS
 	barrier->block();
@@ -119,12 +119,12 @@ void SimpleThread(int which){
 
 #else  // not changed or threads
 void SimpleThread(int which){
-    int num;
-    
-    for (num = 0; num < 5; num++) {
-	    printf("*** thread %d looped %d times\n", which, num);
-        currentThread->Yield();
-    }
+	int num;
+
+	for (num = 0; num < 5; num++) {
+		printf("*** thread %d looped %d times\n", which, num);
+		currentThread->Yield();
+	}
 }
 #endif
 
@@ -136,180 +136,191 @@ void SimpleThread(int which){
 #if defined THREADS && defined CHANGED 
 #ifdef HW1_CV 
 void ThreadTest1(int n){
-    DEBUG('t', "Entering ThreadTest1");
-    barrier = new Barrier("b", n+1);
-    l = new Lock("lock");
-    c = new Condition("Cond");
+	DEBUG('t', "Entering ThreadTest1");
+	barrier = new Barrier("b", n+1);
+	l = new Lock("lock");
+	c = new Condition("Cond");
 	for(int i = 1; i <= n; i++){
-	  	Thread *t = new Thread("forked thread");
-    	t->Fork(CondThread, i);
+		Thread *t = new Thread("forked thread");
+		t->Fork(CondThread, i);
 	}
 	currentThread->Yield();
-    l->Acquire(); 
+	l->Acquire(); 
 	SignalThread(0);
 }
 
 #else
 void ThreadTest1(int n){
-    DEBUG('t', "Entering ThreadTest1");
+	DEBUG('t', "Entering ThreadTest1");
 #if defined HW1_SEMAPHORES || defined HW1_LOCKS
-    s = new Semaphore("s", 1);
-    l = new Lock("l");
-    barrier = new Barrier("b", n+1);
+	s = new Semaphore("s", 1);
+	l = new Lock("l");
+	barrier = new Barrier("b", n+1);
 #endif
 	for(int i = 1; i <= n; i++){
-	  	Thread *t = new Thread("forked thread");
-    	t->Fork(SimpleThread, i);
+		Thread *t = new Thread("forked thread");
+		t->Fork(SimpleThread, i);
 	}
-   
+
 	SimpleThread(0);
 }
 #endif  // not cv, semaphores or locks
 #else   // not changed or not threads
 void ThreadTest1(){
-    DEBUG('t', "Entering ThreadTest1");
+	DEBUG('t', "Entering ThreadTest1");
 
-    Thread *t = new Thread("forked thread");
+	Thread *t = new Thread("forked thread");
 
-    t->Fork(SimpleThread, 1);
-    SimpleThread(0);
+	t->Fork(SimpleThread, 1);
+	SimpleThread(0);
 }
 #endif
 
 #ifdef HW1_TIME
 long elapsedTime(struct timeval start, struct timeval end){
 
-    // calculate time in microseconds
-    long tS = start.tv_sec*1000000 + (start.tv_usec);
-    long tE = end.tv_sec*1000000  + (end.tv_usec);
-    return tE - tS ;
+	// calculate time in microseconds
+	long tS = start.tv_sec*1000000 + start.tv_usec;
+	long tE = end.tv_sec*1000000  + end.tv_usec;
+	return tE - tS;
 }
 
 int switchCount;
+#define EIGHT 8388608
 
 void TimingThreadSwitchNoJump(int size){
-    char *temp = new char[size];
-    int x;
-    
-    for (int num = 0; num < 1000000; num++ ){
-            time_t t = time(NULL);
-            char c = temp[num%size];
-            temp[num%size] = c++;
-            switchCount++;
-            currentThread->Yield();          
-    }
-    currentThread->Yield();
-    switchCount++;
+	char* temp = new char[EIGHT];
+	int num = 0, counter = 0;
+
+	for(; counter < 100; num++){
+		time_t t = time(NULL);
+		char c = temp[num%EIGHT];
+//		temp[num%EIGHT] = ++c;
+		if(num%size == 0){
+			switchCount++;
+			currentThread->Yield();
+			counter++;
+		}
+	}
+	switchCount++;
+	currentThread->Yield();
 }
 
 void TimingThreadNoSwitchNoJump(int size){
-    char *temp = new char[size];
-    int x;
-    
-    for (int num = 0; num < 1000000; num++ ){
-            char c = temp[num%size];
-            temp[num%size] = c++;
-            switchCount++;
-    }
-    currentThread->Yield();
-    switchCount++;
+	char *temp = new char[EIGHT];
+	int num = 0, counter = 0;
+
+	for(; counter < 100; num++){
+		time_t t = time(NULL);
+		char c = temp[num%EIGHT];
+//		temp[num%EIGHT] = ++c;
+		if(num%size == 0){
+			counter++;
+		}
+		num++;
+	}
+	switchCount++;
+	currentThread->Yield();
+
 }
 
 void TimingThreadSwitch(int size){
-    char *temp = new char[size];
-    int x;
-    
-    for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-            time_t t = time(NULL);
-            char c = temp[x];
-            temp[x] = c++;
-            switchCount++;
-            currentThread->Yield();          
-    }
-    currentThread->Yield();
-    switchCount++;
+	char *temp = new char[size];
+	int x;
+
+	for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
+		time_t t = time(NULL);
+		char c = temp[x];
+		temp[x] = ++c;
+		switchCount++;
+		currentThread->Yield();          
+	}
+	currentThread->Yield();
+	switchCount++;
 }
 
 void TimingThreadNoSwitch(int size){
-    char *temp = new char[size];
-    int x;
-    
-    for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
-            time_t t = time(NULL);
-            char c = temp[x];
-            temp[x] = c++;
-    }
-    currentThread->Yield();
-    switchCount++;
+	char *temp = new char[size];
+	int x;
+
+	for (int num = 0, x = 0; num < 1000000; num++, x=(x + 4096)%size) {
+		time_t t = time(NULL);
+		char c = temp[x];
+		temp[x] = ++c;
+	}
+	currentThread->Yield();
+	switchCount++;
 }
 
 void TimingThreadTest(int size){
-    
-    Thread *t = new Thread("forked thread");
 
-    struct timeval start,end;
-    gettimeofday(&start,NULL);
-    
-    t->Fork(TimingThreadSwitch, size);
-    TimingThreadSwitch(size);
-    
-    currentThread->Yield();
-    
-    gettimeofday(&end,NULL);
-    long switchTime = elapsedTime(start,end);  
-    
-    printf("\n");
-    int oldSwitches = switchCount;
-    switchCount = 0;
-    t = new Thread("forked thread");
+	Thread *t = new Thread("forked thread");
 
-    gettimeofday(&start,NULL);
-    
-    t->Fork(TimingThreadNoSwitch, size);
-    TimingThreadNoSwitch(size);
-    
-    currentThread->Yield();
-    
-    gettimeofday(&end,NULL);
-    long noSwitchTime = elapsedTime(start,end);  
-    
-    double aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
-    
-    printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
-    printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
-    
-    t = new Thread("forked thread");
+	struct timeval start,end;
+	gettimeofday(&start,NULL);
 
-    gettimeofday(&start,NULL);
-    
-    t->Fork(TimingThreadSwitchNoJump, size);
-    TimingThreadSwitchNoJump(size);
-    
-    currentThread->Yield();
-    
-    gettimeofday(&end,NULL);
-    switchTime = elapsedTime(start,end);  
-    
-    printf("\n");
-    oldSwitches = switchCount;
-    switchCount = 0;
-    t = new Thread("forked thread");
+	t->Fork(TimingThreadSwitchNoJump, size);
+	TimingThreadSwitchNoJump(size);
 
-    gettimeofday(&start,NULL);
-    
-    t->Fork(TimingThreadNoSwitchNoJump, size);
-    TimingThreadNoSwitchNoJump(size);
-    
-    currentThread->Yield();
-    
-    gettimeofday(&end,NULL);
-    noSwitchTime = elapsedTime(start,end);  
-    
-    aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
-    
-    printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
-    printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+	currentThread->Yield();
 
+	gettimeofday(&end,NULL);
+	long switchTime = elapsedTime(start,end);  
+
+	printf("\n");
+	int oldSwitches = switchCount;
+	switchCount = 0;
+	t = new Thread("forked thread");
+
+	gettimeofday(&start,NULL);
+
+	t->Fork(TimingThreadNoSwitchNoJump, size);
+	TimingThreadNoSwitchNoJump(size);
+
+	currentThread->Yield();
+
+	gettimeofday(&end,NULL);
+	long noSwitchTime = elapsedTime(start,end);  
+
+	double aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
+
+	printf("%d size\n", size);
+	printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", 
+		oldSwitches/2, switchTime, noSwitchTime, switchTime - noSwitchTime);  
+	printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+/*
+	t = new Thread("forked thread");
+
+	gettimeofday(&start,NULL);
+
+	t->Fork(TimingThreadSwitchNoJump, size);
+	TimingThreadSwitchNoJump(size);
+
+	currentThread->Yield();
+
+	gettimeofday(&end,NULL);
+	switchTime = elapsedTime(start,end);  
+
+	printf("\n");
+	oldSwitches = switchCount;
+	switchCount = 0;
+	t = new Thread("forked thread");
+
+	gettimeofday(&start,NULL);
+
+	t->Fork(TimingThreadNoSwitchNoJump, size);
+	TimingThreadNoSwitchNoJump(size);
+
+	currentThread->Yield();
+
+	gettimeofday(&end,NULL);
+	noSwitchTime = elapsedTime(start,end);  
+
+	aveTime = (switchTime - noSwitchTime)/(oldSwitches/2.0);
+
+	printf("%d switches, %ld switch time, %ld no switch time, %ld us\n", oldSwitches, switchTime, noSwitchTime, switchTime - noSwitchTime);  
+	printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
+*/
 }
 #endif
 
@@ -319,34 +330,39 @@ void TimingThreadTest(int size){
 //----------------------------------------------------------------------
 #if defined CHANGED && defined THREADS
 void ThreadTest(int n){
-    switch (testnum) {
-    case 1:
-        #ifdef HW1_TIME        
-        TimingThreadTest(1024);
-//        TimingThreadTest(1024, 1000);
-        TimingThreadTest(262144);
-//        TimingThreadTest(262144, 1000);
-        TimingThreadTest(8388608);
-//        TimingThreadTest(8388608, 1000);
-        #else
-        ThreadTest1(n);
-        #endif
-        break;
-    default:
-	    printf("No test specified.\n");
-	    break;
-    }
+	switch (testnum) {
+		case 1:
+#ifdef HW1_TIME        
+			TimingThreadTest(1024);
+			TimingThreadTest(8196);
+			TimingThreadTest(8196*2);
+			TimingThreadTest(8196*4);
+			TimingThreadTest(8196*16);
+			//        TimingThreadTest(1024, 1000);
+			TimingThreadTest(262144);
+			TimingThreadTest(262144*8);
+			//        TimingThreadTest(262144, 1000);
+			TimingThreadTest(8388608);
+			//        TimingThreadTest(8388608, 1000);
+#else
+			ThreadTest1(n);
+#endif
+			break;
+		default:
+			printf("No test specified.\n");
+			break;
+	}
 }
 #else
 void ThreadTest(){
-    switch (testnum) {
-    case 1:
-	    ThreadTest1();
-	    break;
-    default:
-	    printf("No test specified.\n");
-	    break;
-    }
+	switch (testnum) {
+		case 1:
+			ThreadTest1();
+			break;
+		default:
+			printf("No test specified.\n");
+			break;
+	}
 }
 #endif
 
