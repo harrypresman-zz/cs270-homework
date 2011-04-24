@@ -12,9 +12,17 @@
 
 #include "syscall.h"
 
-int
-main()
-{
+int main(){
+    Exit(1);
+    Exec("apple");
+    Join(1);
+    Create("apple");
+    Open("apple");
+    Read(0, 1, 1);
+    Write(0, 1, 1);
+    Close(1);
+    Fork(0);
+    Yield();
     Halt();
     /* not reached */
 }

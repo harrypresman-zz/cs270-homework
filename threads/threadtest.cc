@@ -187,6 +187,7 @@ long elapsedTime(struct timeval start, struct timeval end){
 
 int switchCount;
 #define EIGHT 8388608
+#define GB 1073741824 
 
 void SwitchingOnNumber(int size){
 	char* temp = new char[EIGHT];
@@ -328,6 +329,21 @@ void TimingThreadTest2(int size){
 	printf("%d switches took an average of %.2lf us\n", oldSwitches/2, aveTime);
 
 }
+
+void Baseline(long step_size, long to_alloc){
+    long i, j;
+    char* arr = new char[to_alloc];
+	struct timeval start,end;
+	gettimeofday(&start, NULL);
+    for( i = 0, j = 0; j < 10000000; i = (i+step_size)%to_alloc, j++ ){
+        char c = arr[i];
+    }
+	gettimeofday(&end, NULL);
+	long time = elapsedTime(start,end);
+    //printf("array size: %12ld, step size: %12ld, %8ld us\n", to_alloc, step_size, time);
+    printf("%12ld\t%12ld\t%8.6lf\n", to_alloc, step_size, time/1000000.0);
+    delete arr;
+}
 #endif
 
 //----------------------------------------------------------------------
@@ -338,7 +354,13 @@ void TimingThreadTest2(int size){
 void ThreadTest(int n){
 	switch (testnum) {
 		case 1:
-#ifdef HW1_TIME        
+#ifdef HW1_TIME
+            for(long i = 1; i < GB; i *= 2){
+                for(long j = 1; j < i/2; j *= 2){
+                    Baseline(j, i);
+                }
+                printf("\n\n");
+            }
 /*
 			TimingThreadTest1(1024);
 			TimingThreadTest1(8196);
@@ -348,7 +370,6 @@ void ThreadTest(int n){
 			TimingThreadTest1(262144);
 			TimingThreadTest1(262144*8);
 			TimingThreadTest1(8388608);
-*/
 			TimingThreadTest2(1024);
 			TimingThreadTest2(8196);
 			TimingThreadTest2(8196*2);
@@ -357,6 +378,7 @@ void ThreadTest(int n){
 			TimingThreadTest2(262144);
 			TimingThreadTest2(262144*8);
 			TimingThreadTest2(8388608);
+*/
 
 #else
 			ThreadTest1(n);

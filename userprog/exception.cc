@@ -48,16 +48,44 @@
 //	are in machine.h.
 //----------------------------------------------------------------------
 
-void
-ExceptionHandler(ExceptionType which)
-{
+#define PCReg		34	// Current program counter
+#define NextPCReg	35	// Next program counter (for branch delay) 
+#define PrevPCReg	36	// Previous program counter (for debugging)
+
+void ExceptionHandler(ExceptionType which){
     int type = machine->ReadRegister(2);
 
     if ((which == SyscallException) && (type == SC_Halt)) {
-	DEBUG('a', "Shutdown, initiated by user program.\n");
-   	interrupt->Halt();
+        DEBUG('a', "Shutdown, initiated by user program.\n");
+        interrupt->Halt();
+    }else if ((which == SyscallException) && (type == SC_Exit)) {
+        DEBUG('a', "EXIT, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Exec)) {
+        DEBUG('a', "EXEC, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Join)) {
+        DEBUG('a', "JOIN, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Create)) {
+        DEBUG('a', "CREATE, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Open)) {
+        DEBUG('a', "OPEN, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Read)) {
+        DEBUG('a', "READ, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Write)) {
+        DEBUG('a', "WRITE, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Close)) {
+        DEBUG('a', "CLOSE, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Fork)) {
+        DEBUG('a', "FORK, initiated by user program.\n");
+    }else if ((which == SyscallException) && (type == SC_Yield)) {
+        DEBUG('a', "YIELD, initiated by user program.\n");
     } else {
-	printf("Unexpected user mode exception %d %d\n", which, type);
-	ASSERT(FALSE);
+        printf("Unexpected user mode exception %d %d\n", which, type);
+        ASSERT(FALSE);
     }
+    // Advance program counters.
+    machine->registers[PrevPCReg] = machine->registers[PCReg];
+    // for debugging, in case we
+    // are jumping into lala-land
+    machine->registers[PCReg] = machine->registers[NextPCReg];
+    machine->registers[NextPCReg] = machine->registers[PCReg] + 4;
 }
