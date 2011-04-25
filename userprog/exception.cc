@@ -52,8 +52,37 @@
 #define NextPCReg	35	// Next program counter (for branch delay) 
 #define PrevPCReg	36	// Previous program counter (for debugging)
 
+void myFork(int newPC);
+void myDummyFork(int newPC);
+
+void incrementPC(){
+    machine->registers[PrevPCReg] = machine->registers[PCReg];
+    machine->registers[PCReg] = machine->registers[NextPCReg];
+    machine->registers[NextPCReg] = machine->registers[PCReg] + 4;
+}
+
+void myFork(int newPC){
+    DEBUG('a', "FORK, initiated by user program.\n");
+    // fork kernel thread
+    Thread * forkedThread = new Thread("ForkedThread");
+    //forkedThread->space = currentThread->space;
+    forkedThread->Fork(myDummyFork, newPC);
+    currentThread->Yield();
+}
+
+void myDummyFork(int newPC){
+    // set addr space to dup of this thread space
+    // sets
+    // yield
+    // reg copying stuff, etc
+    DEBUG('a', "FORK, forked thread.\n");
+    incrementPC();
+}
+
 void ExceptionHandler(ExceptionType which){
     int type = machine->ReadRegister(2);
+
+    int arg1, arg2, arg3, arg4;
 
     if ((which == SyscallException) && (type == SC_Halt)) {
         DEBUG('a', "Shutdown, initiated by user program.\n");
@@ -75,17 +104,13 @@ void ExceptionHandler(ExceptionType which){
     }else if ((which == SyscallException) && (type == SC_Close)) {
         DEBUG('a', "CLOSE, initiated by user program.\n");
     }else if ((which == SyscallException) && (type == SC_Fork)) {
-        DEBUG('a', "FORK, initiated by user program.\n");
+        arg1 = machine->ReadRegister(4);
+        myFork( arg1 );
     }else if ((which == SyscallException) && (type == SC_Yield)) {
         DEBUG('a', "YIELD, initiated by user program.\n");
     } else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
-    // Advance program counters.
-    machine->registers[PrevPCReg] = machine->registers[PCReg];
-    // for debugging, in case we
-    // are jumping into lala-land
-    machine->registers[PCReg] = machine->registers[NextPCReg];
-    machine->registers[NextPCReg] = machine->registers[PCReg] + 4;
+    incrementPC();
 }

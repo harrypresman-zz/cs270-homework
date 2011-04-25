@@ -85,8 +85,10 @@ AddrSpace::AddrSpace(OpenFile *executable){
     // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-        pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-        pageTable[i].physicalPage = i;
+        int pageNum = memMgr->getPage();
+        ASSERT( pageNum >= 0 );
+        pageTable[i].virtualPage = i;
+        pageTable[i].physicalPage = pageNum;
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -117,10 +119,12 @@ AddrSpace::AddrSpace(OpenFile *executable){
 
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
-// 	Dealloate an address space.  Nothing for now!
+// 	Deallocate an address space.  Nothing for now!
 //----------------------------------------------------------------------
 
 AddrSpace::~AddrSpace(){
+    for( int i = 0; i < numPages; i++ )
+        memMgr->clearPage(pageTable[i].physicalPage);
     delete pageTable;
 }
 
@@ -152,6 +156,10 @@ void AddrSpace::InitRegisters(){
     // accidentally reference off the end!
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
     DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
+}
+
+bool AddrSpace::Translate(int virtAddr, int* physAddr){
+    
 }
 
 //----------------------------------------------------------------------
