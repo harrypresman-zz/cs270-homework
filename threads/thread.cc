@@ -88,7 +88,7 @@ void
 Thread::Fork(VoidFunctionPtr func, int arg)
 {
     DEBUG('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
-	  name, (int) func, arg);
+	      name, (int) func, arg);
     
     StackAllocate(func, arg);
 

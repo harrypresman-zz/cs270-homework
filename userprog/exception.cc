@@ -65,13 +65,12 @@ void myFork(int newPC){
     DEBUG('a', "FORK, initiated by user program.\n");
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
-    //forkedThread->space = currentThread->space;
+    currentThread->space->CopyAddrSpace( forkedThread->space );
     forkedThread->Fork(myDummyFork, newPC);
     currentThread->Yield();
 }
 
 void myDummyFork(int newPC){
-    // set addr space to dup of this thread space
     // sets
     // yield
     // reg copying stuff, etc
@@ -81,7 +80,7 @@ void myDummyFork(int newPC){
 
 void ExceptionHandler(ExceptionType which){
     int type = machine->ReadRegister(2);
-
+    printf("%d == %d?\n", type, SC_Fork );
     int arg1, arg2, arg3, arg4;
 
     if ((which == SyscallException) && (type == SC_Halt)) {

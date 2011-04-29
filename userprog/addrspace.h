@@ -20,6 +20,7 @@
 
 class AddrSpace {
     public:
+        AddrSpace(){}
         AddrSpace(OpenFile *executable);	// Create an address space,
         // initializing it with the program
         // stored in the file "executable"
@@ -31,7 +32,8 @@ class AddrSpace {
         void SaveState();			// Save/restore address space-specific
         void RestoreState();		// info on a context switch 
         bool Translate(int virtAddr, int* physAddr);           // translate a virt mem location into physical
-
+        int ReadFile( int vAddr, OpenFile* file, int size, int fileAddr ); 
+        bool CopyAddrSpace(AddrSpace* spaceDest);
     private:
         TranslationEntry* pageTable;	// Assume linear page table translation
         // for now!

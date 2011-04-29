@@ -7,7 +7,7 @@
 //	2. run coff2noff to convert the object file to Nachos format
 //		(Nachos object code format is essentially just a simpler
 //		version of the UNIX executable object code format)
-//	3. load the NOFF file into the Nachos file system
+//	  load the NOFF file into the Nachos file system
 //		(if you haven't implemented the file system yet, you
 //		don't need to do this last step)
 //
@@ -60,6 +60,7 @@ static void SwapHeader (NoffHeader *noffH){
 
 AddrSpace::AddrSpace(OpenFile *executable){
     NoffHeader noffH;
+
     unsigned int i, size;
 
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
@@ -99,20 +100,24 @@ AddrSpace::AddrSpace(OpenFile *executable){
 
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
-    bzero(machine->mainMemory, size);
+    //bzero(machine->mainMemory, size);
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
                 noffH.code.virtualAddr, noffH.code.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr]),
-                noffH.code.size, noffH.code.inFileAddr);
+        ReadFile( noffH.code.virtualAddr, executable, noffH.code.size, 
+                  noffH.code.inFileAddr);
+        //executable->ReadAt( &(machine->mainMemory[noffH.code.virtualAddr]), noffH.code.size, 
+        //          noffH.code.inFileAddr);
     }
     if (noffH.initData.size > 0) {
         DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
                 noffH.initData.virtualAddr, noffH.initData.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
-                noffH.initData.size, noffH.initData.inFileAddr);
+        ReadFile( noffH.initData.virtualAddr, executable, noffH.initData.size, 
+                  noffH.initData.inFileAddr);
+        //executable->ReadAt( &(machine->mainMemory[noffH.initData.virtualAddr]), noffH.initData.size, 
+        //          noffH.initData.inFileAddr);
     }
 
 }
@@ -127,6 +132,34 @@ AddrSpace::~AddrSpace(){
         memMgr->clearPage(pageTable[i].physicalPage);
     delete pageTable;
 }
+
+
+bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
+
+    DEBUG( 'a', "Copying address space, num pages %d, size %d\n", 
+            numPages, numPages * PageSize );
+
+    printf( "Copying address space, num pages %d, size %d\n", 
+            numPages, numPages * PageSize );
+    // first, set up the translation 
+    spaceDest->pageTable = new TranslationEntry[numPages];
+    spaceDest->numPages = numPages;
+
+    for (int i = 0; i < numPages; i++) {
+        int pageNum = memMgr->getPage();
+        ASSERT( pageNum >= 0 );
+        spaceDest->pageTable[i].virtualPage = i;
+        spaceDest->pageTable[i].physicalPage = pageNum;
+        memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
+                machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), PageSize);
+        spaceDest->pageTable[i].valid = TRUE;
+        spaceDest->pageTable[i].use = FALSE;
+        spaceDest->pageTable[i].dirty = FALSE;
+        spaceDest->pageTable[i].readOnly = FALSE;
+    }
+
+}
+
 
 //----------------------------------------------------------------------
 // AddrSpace::InitRegisters
@@ -159,7 +192,42 @@ void AddrSpace::InitRegisters(){
 }
 
 bool AddrSpace::Translate(int virtAddr, int* physAddr){
-    
+    if(physAddr == NULL) return false;
+
+    int vPageNum = virtAddr/PageSize;
+    int offset = virtAddr % PageSize;
+
+    if( numPages <= vPageNum ) return false;
+
+    int physPage = pageTable[ vPageNum ].physicalPage;
+    *physAddr = ( physPage * PageSize ) + offset;
+
+    return true;
+}
+
+int AddrSpace::ReadFile( int vAddr, OpenFile* file, int size, int fileAddr ){
+    int copySize = PageSize;
+    while( size > 0 ){
+        int pAddr;
+
+        if( size < PageSize ) copySize = size;
+
+        file->ReadAt( diskBuffer, copySize, fileAddr );
+        bool successful = Translate( vAddr, &pAddr );
+        
+        if( ! successful ) return -1;
+        // TODO: may have to fix page size
+        if( pAddr % PageSize != 0 ) printf("Fix translation to be page aligned!!\n");
+
+        printf("Copying %d bytes to %x pAddr\n ", copySize, pAddr);
+        bcopy( (void *)diskBuffer, (void *)(machine->mainMemory + pAddr) , copySize );
+        //memcpy(machine->mainMemory + pAddr, diskBuffer, copySize);
+
+        size -= PageSize;
+        vAddr += copySize;
+    }
+
+    return 1; 
 }
 
 //----------------------------------------------------------------------
