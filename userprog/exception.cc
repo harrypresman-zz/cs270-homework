@@ -64,9 +64,10 @@ void incrementPC(){
     machine->registers[NextPCReg] = machine->registers[PCReg] + 4;
 }
 
-void jumpPC(int newPC){
+void jumpPC( int newPC ){
     machine->registers[PCReg] = newPC;
     machine->registers[NextPCReg] = newPC + 4;
+    // TODO: do we need to do anything with the ret addr??
     //machine->registers[RetAddrReg] += 8;
 }
 
@@ -113,7 +114,7 @@ void execBridge( int newPC ){
                             // by user program %s.\n", currentThread->getName() );
 }
 
-void myFork(int newPC){
+void myFork( int newPC ){
     printf( "FORK, initiated by user program %s.\n", currentThread->getName() );
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
@@ -124,7 +125,7 @@ void myFork(int newPC){
     printf("returned from fork\n");
 }
 
-void forkBridge(int newPC){
+void forkBridge( int newPC ){
     currentThread->space->InitRegisters();
     currentThread->space->RestoreState();
 

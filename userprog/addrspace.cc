@@ -98,9 +98,8 @@ AddrSpace::AddrSpace(OpenFile *executable){
         // pages to be read-only
     }
 
-    // zero out the entire address space, to zero the unitialized data segment 
-    // and the stack segment
-    //bzero(machine->mainMemory, size);
+    // zero out the addresses used only by this user space
+    bzero( machine->mainMemory + pageTable[0].physicalPage * PageSize, size );
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
@@ -135,21 +134,22 @@ AddrSpace::~AddrSpace(){
 
 
 bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
-
     DEBUG( 'a', "Copying address space, num pages %d, size %d\n", 
             numPages, numPages * PageSize );
 
-    // first, set up the translation 
+    // first, set up the translation table
     spaceDest->pageTable = new TranslationEntry[numPages];
     spaceDest->numPages = numPages;
 
+    // we need to duplicate all the pages into the new addrSpace
     for (int i = 0; i < numPages; i++) {
         int pageNum = memMgr->getPage();
         ASSERT( pageNum >= 0 );
         spaceDest->pageTable[i].virtualPage = i;
         spaceDest->pageTable[i].physicalPage = pageNum;
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
-                machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), PageSize);
+                machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), 
+                PageSize );
         spaceDest->pageTable[i].valid = TRUE;
         spaceDest->pageTable[i].use = FALSE;
         spaceDest->pageTable[i].dirty = FALSE;
