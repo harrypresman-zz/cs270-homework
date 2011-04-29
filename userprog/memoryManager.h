@@ -16,15 +16,16 @@
 class MemoryManager{
     public:
 
-    MemoryManager();
-    ~MemoryManager();
+        MemoryManager();
+        ~MemoryManager();
 
-    int getPage();
-    void clearPage(int i);
-    
+        int getPage();
+        void clearPage(int i);
+        int getFreePageCount();
+
     private:
 
-    BitMap* bitmap;
+        BitMap* bitmap;
 };
 
 #endif

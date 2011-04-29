@@ -27,9 +27,7 @@ static void Mult(int a, int b, bool signedArith, int* hiPtr, int* loPtr);
 //	times concurrently -- one for each thread executing user code.
 //----------------------------------------------------------------------
 
-    void
-Machine::Run()
-{
+void Machine::Run(){
     Instruction *instr = new Instruction;  // storage for decoded instruction
 
     if(DebugIsEnabled('m'))
@@ -50,9 +48,7 @@ Machine::Run()
 // 	Retrieve the register # referred to in an instruction. 
 //----------------------------------------------------------------------
 
-    static int 
-TypeToReg(RegType reg, Instruction *instr)
-{
+static int TypeToReg(RegType reg, Instruction *instr){
     switch (reg) {
         case RS:
             return instr->rs;
@@ -90,9 +86,7 @@ TypeToReg(RegType reg, Instruction *instr)
 //	and the register set.
 //----------------------------------------------------------------------
 
-    void
-Machine::OneInstruction(Instruction *instr)
-{
+void Machine::OneInstruction(Instruction *instr){
     int raw;
     int nextLoadReg = 0; 	
     int nextLoadValue = 0; 	// record delayed load operation, to apply
@@ -572,9 +566,7 @@ Machine::OneInstruction(Instruction *instr)
 //	since any delayed load must get applied before we trap to the kernel.
 //----------------------------------------------------------------------
 
-    void
-Machine::DelayedLoad(int nextReg, int nextValue)
-{
+void Machine::DelayedLoad(int nextReg, int nextValue){
     registers[registers[LoadReg]] = registers[LoadValueReg];
     registers[LoadReg] = nextReg;
     registers[LoadValueReg] = nextValue;
@@ -586,9 +578,7 @@ Machine::DelayedLoad(int nextReg, int nextValue)
 // 	Decode a MIPS instruction 
 //----------------------------------------------------------------------
 
-    void
-Instruction::Decode()
-{
+void Instruction::Decode(){
     OpInfo *opPtr;
 
     rs = (value >> 21) & 0x1f;
@@ -632,9 +622,7 @@ Instruction::Decode()
 // 	double-length result of the multiplication.
 //----------------------------------------------------------------------
 
-    static void
-Mult(int a, int b, bool signedArith, int* hiPtr, int* loPtr)
-{
+static void Mult(int a, int b, bool signedArith, int* hiPtr, int* loPtr){
     if ((a == 0) || (b == 0)) {
         *hiPtr = *loPtr = 0;
         return;

@@ -48,6 +48,7 @@
 //	are in machine.h.
 //----------------------------------------------------------------------
 
+#define RetAddrReg	31	// Holds return address for procedure calls
 #define PCReg		34	// Current program counter
 #define NextPCReg	35	// Next program counter (for branch delay) 
 #define PrevPCReg	36	// Previous program counter (for debugging)
@@ -61,21 +62,33 @@ void incrementPC(){
     machine->registers[NextPCReg] = machine->registers[PCReg] + 4;
 }
 
+void jumpPC(int newPC){
+    machine->registers[PCReg] = newPC;
+    machine->registers[NextPCReg] = newPC + 4;
+    //machine->registers[RetAddrReg] += 8;
+}
+
 void myFork(int newPC){
-    DEBUG('a', "FORK, initiated by user program.\n");
+    printf( "FORK, initiated by user program %s.\n", currentThread->getName() );
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
+    forkedThread->space = new AddrSpace;
     currentThread->space->CopyAddrSpace( forkedThread->space );
     forkedThread->Fork(myDummyFork, newPC);
     currentThread->Yield();
+    printf("returned from fork\n");
 }
 
 void myDummyFork(int newPC){
-    // sets
-    // yield
+    currentThread->space->InitRegisters();
+    currentThread->space->RestoreState();
+    // move stack pointer to new addrspace?
+
     // reg copying stuff, etc
-    DEBUG('a', "FORK, forked thread.\n");
-    incrementPC();
+    printf( "FORK, forked thread %s.\n", currentThread->getName() );
+    jumpPC(newPC);
+
+    machine->Run();
 }
 
 void ExceptionHandler(ExceptionType which){
@@ -84,29 +97,31 @@ void ExceptionHandler(ExceptionType which){
     int arg1, arg2, arg3, arg4;
 
     if ((which == SyscallException) && (type == SC_Halt)) {
-        DEBUG('a', "Shutdown, initiated by user program.\n");
+        printf( "Shutdown, initiated by user program %s.\n", currentThread->getName() );
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-        DEBUG('a', "EXIT, initiated by user program.\n");
+        printf( "EXIT, initiated by user program %s.\n", currentThread->getName() );
+        currentThread->Finish();
     }else if ((which == SyscallException) && (type == SC_Exec)) {
-        DEBUG('a', "EXEC, initiated by user program.\n");
+        printf( "EXEC, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Join)) {
-        DEBUG('a', "JOIN, initiated by user program.\n");
+        printf( "JOIN, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Create)) {
-        DEBUG('a', "CREATE, initiated by user program.\n");
+        printf( "CREATE, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Open)) {
-        DEBUG('a', "OPEN, initiated by user program.\n");
+        printf( "OPEN, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Read)) {
-        DEBUG('a', "READ, initiated by user program.\n");
+        printf( "READ, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Write)) {
-        DEBUG('a', "WRITE, initiated by user program.\n");
+        printf( "WRITE, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Close)) {
-        DEBUG('a', "CLOSE, initiated by user program.\n");
+        printf( "CLOSE, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Fork)) {
         arg1 = machine->ReadRegister(4);
         myFork( arg1 );
     }else if ((which == SyscallException) && (type == SC_Yield)) {
-        DEBUG('a', "YIELD, initiated by user program.\n");
+        printf( "YIELD, initiated by user program.\n");
+        currentThread->Yield();
     } else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);

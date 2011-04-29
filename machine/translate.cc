@@ -38,8 +38,7 @@
 // simulated machine's format of little endian.  These end up
 // being NOPs when the host machine is also little endian (DEC and Intel).
 
-unsigned int
-WordToHost(unsigned int word) {
+unsigned int WordToHost(unsigned int word) {
 #ifdef HOST_IS_BIG_ENDIAN
     register unsigned long result;
     result = (word >> 24) & 0x000000ff;
@@ -52,8 +51,7 @@ WordToHost(unsigned int word) {
 #endif /* HOST_IS_BIG_ENDIAN */
 }
 
-unsigned short
-ShortToHost(unsigned short shortword) {
+unsigned short ShortToHost(unsigned short shortword) {
 #ifdef HOST_IS_BIG_ENDIAN
     register unsigned short result;
     result = (shortword << 8) & 0xff00;
@@ -64,11 +62,9 @@ ShortToHost(unsigned short shortword) {
 #endif /* HOST_IS_BIG_ENDIAN */
 }
 
-unsigned int
-WordToMachine(unsigned int word) { return WordToHost(word); }
+unsigned int WordToMachine(unsigned int word) { return WordToHost(word); }
 
-unsigned short
-ShortToMachine(unsigned short shortword) { return ShortToHost(shortword); }
+unsigned short ShortToMachine(unsigned short shortword) { return ShortToHost(shortword); }
 
 
 //----------------------------------------------------------------------
@@ -84,9 +80,7 @@ ShortToMachine(unsigned short shortword) { return ShortToHost(shortword); }
 //	"value" -- the place to write the result
 //----------------------------------------------------------------------
 
-    bool
-Machine::ReadMem(int addr, int size, int *value)
-{
+bool Machine::ReadMem(int addr, int size, int *value){
     int data;
     ExceptionType exception;
     int physicalAddress;
@@ -134,9 +128,7 @@ Machine::ReadMem(int addr, int size, int *value)
 //	"value" -- the data to be written
 //----------------------------------------------------------------------
 
-    bool
-Machine::WriteMem(int addr, int size, int value)
-{
+bool Machine::WriteMem(int addr, int size, int value){
     ExceptionType exception;
     int physicalAddress;
 
@@ -183,9 +175,7 @@ Machine::WriteMem(int addr, int size, int value)
 // 	"writing" -- if TRUE, check the "read-only" bit in the TLB
 //----------------------------------------------------------------------
 
-    ExceptionType
-Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
-{
+ExceptionType Machine::Translate(int virtAddr, int* physAddr, int size, bool writing){
     int i;
     unsigned int vpn, offset;
     TranslationEntry *entry;

@@ -70,13 +70,13 @@ AddrSpace::AddrSpace(OpenFile *executable){
     ASSERT(noffH.noffMagic == NOFFMAGIC);
 
     // how big is address space?
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
-        + UserStackSize;	// we need to increase the size
+    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + 
+           UserStackSize;	// we need to increase the size
     // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPages);		// check we're not trying
+    ASSERT(numPages <= memMgr->getFreePageCount());		// check we're not trying
     // to run anything too big --
     // at least until we have
     // virtual memory
@@ -90,6 +90,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
         ASSERT( pageNum >= 0 );
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = pageNum;
+        printf( "Virtual page %d -> Physical page %d\n", i, pageNum );
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -100,7 +101,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
 
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
-    //bzero(machine->mainMemory, size);
+    bzero(machine->mainMemory, size);
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
@@ -129,7 +130,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
 
 AddrSpace::~AddrSpace(){
     for( int i = 0; i < numPages; i++ )
-        memMgr->clearPage(pageTable[i].physicalPage);
+        memMgr->clearPage( pageTable[i].physicalPage );
     delete pageTable;
 }
 
@@ -150,6 +151,7 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
         ASSERT( pageNum >= 0 );
         spaceDest->pageTable[i].virtualPage = i;
         spaceDest->pageTable[i].physicalPage = pageNum;
+        printf( "Virtual page %d -> Physical page %d\n", i, pageNum );
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
                 machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), PageSize);
         spaceDest->pageTable[i].valid = TRUE;
@@ -197,10 +199,10 @@ bool AddrSpace::Translate(int virtAddr, int* physAddr){
     int vPageNum = virtAddr/PageSize;
     int offset = virtAddr % PageSize;
 
-    if( numPages <= vPageNum ) return false;
+    if( vPageNum >= numPages ) return false;
 
-    int physPage = pageTable[ vPageNum ].physicalPage;
-    *physAddr = ( physPage * PageSize ) + offset;
+    int pPageNum = pageTable[ vPageNum ].physicalPage;
+    *physAddr = ( pPageNum * PageSize ) + offset;
 
     return true;
 }
@@ -213,18 +215,19 @@ int AddrSpace::ReadFile( int vAddr, OpenFile* file, int size, int fileAddr ){
         if( size < PageSize ) copySize = size;
 
         file->ReadAt( diskBuffer, copySize, fileAddr );
+ 
+        // translate should return the offset in bytes from mainMemory
         bool successful = Translate( vAddr, &pAddr );
+        printf( "vAddr %d -> pAddr %d\n", vAddr, pAddr );
         
         if( ! successful ) return -1;
-        // TODO: may have to fix page size
-        if( pAddr % PageSize != 0 ) printf("Fix translation to be page aligned!!\n");
 
-        printf("Copying %d bytes to %x pAddr\n ", copySize, pAddr);
-        bcopy( (void *)diskBuffer, (void *)(machine->mainMemory + pAddr) , copySize );
-        //memcpy(machine->mainMemory + pAddr, diskBuffer, copySize);
+        printf("Copying %d bytes to %d main mem addr\n ", copySize, machine->mainMemory + pAddr);
+        bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
 
         size -= PageSize;
         vAddr += copySize;
+        fileAddr += copySize;
     }
 
     return 1; 

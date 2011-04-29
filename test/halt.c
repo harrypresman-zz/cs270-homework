@@ -12,8 +12,15 @@
 
 #include "syscall.h"
 
-int main(){
+void testFunc(){
+    int x = 5;
+    x += 5;
+    x -= 2;
     Exit(1);
+}
+
+int main(){
+    Fork(testFunc);
     Exec("apple");
     Join(1);
     Create("apple");
@@ -21,7 +28,8 @@ int main(){
     Read(0, 1, 1);
     Write(0, 1, 1);
     Close(1);
-    Fork(0);
+
+    Fork(testFunc);
     Yield();
     Halt();
     /* not reached */

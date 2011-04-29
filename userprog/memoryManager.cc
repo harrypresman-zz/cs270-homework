@@ -17,3 +17,6 @@ void MemoryManager::clearPage(int i){
     bitmap->Clear(i);
 }
     
+int MemoryManager::getFreePageCount(){
+    return bitmap->NumClear();
+}
