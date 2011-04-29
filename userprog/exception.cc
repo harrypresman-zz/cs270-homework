@@ -53,8 +53,10 @@
 #define NextPCReg	35	// Next program counter (for branch delay) 
 #define PrevPCReg	36	// Previous program counter (for debugging)
 
-void myFork(int newPC);
-void myDummyFork(int newPC);
+void myFork( int newPC );
+void forkBridge( int newPC );
+void myExec( int vAddr );
+void execBridge( int newPC );
 
 void incrementPC(){
     machine->registers[PrevPCReg] = machine->registers[PCReg];
@@ -68,23 +70,64 @@ void jumpPC(int newPC){
     //machine->registers[RetAddrReg] += 8;
 }
 
+void myExit(){
+    printf( "EXIT, initiated by user program %s.\n", currentThread->getName() );
+    delete currentThread->space;
+    currentThread->Finish();
+}
+
+void myExec( int vAddr ){
+    int pAddr;
+
+    currentThread->space->Translate( vAddr, &pAddr );
+
+    char* file = new char[ strlen( machine->mainMemory + pAddr ) ];
+    strcpy( file, machine->mainMemory + pAddr );
+
+    OpenFile* executable = fileSystem->Open( file );
+
+    if( executable == NULL ){
+        printf( "Unable to open file %s\n", file );
+        return;
+    }
+    Thread* forkedThread;
+    forkedThread = new Thread( "Exec Thread" );
+    AddrSpace* space = new AddrSpace( executable );
+    forkedThread->space = space;
+
+    delete file;
+    delete executable;			// close file
+
+    forkedThread->Fork( execBridge, 0 );
+    currentThread->Yield();
+}
+
+void execBridge( int newPC ){
+    currentThread->space->InitRegisters();		// set the initial register values
+    currentThread->space->RestoreState();		// load page table register
+
+    machine->Run();			// jump to the user progam
+    ASSERT(FALSE);			// machine->Run never returns;
+	                        // the address space exits
+                    	    // by doing the syscall "exit"printf( "EXEC, initiated
+                            // by user program %s.\n", currentThread->getName() );
+}
+
 void myFork(int newPC){
     printf( "FORK, initiated by user program %s.\n", currentThread->getName() );
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
     forkedThread->space = new AddrSpace;
     currentThread->space->CopyAddrSpace( forkedThread->space );
-    forkedThread->Fork(myDummyFork, newPC);
+    forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
     printf("returned from fork\n");
 }
 
-void myDummyFork(int newPC){
+void forkBridge(int newPC){
     currentThread->space->InitRegisters();
     currentThread->space->RestoreState();
-    // move stack pointer to new addrspace?
 
-    // reg copying stuff, etc
     printf( "FORK, forked thread %s.\n", currentThread->getName() );
     jumpPC(newPC);
 
@@ -93,17 +136,16 @@ void myDummyFork(int newPC){
 
 void ExceptionHandler(ExceptionType which){
     int type = machine->ReadRegister(2);
-    printf("%d == %d?\n", type, SC_Fork );
     int arg1, arg2, arg3, arg4;
 
     if ((which == SyscallException) && (type == SC_Halt)) {
         printf( "Shutdown, initiated by user program %s.\n", currentThread->getName() );
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-        printf( "EXIT, initiated by user program %s.\n", currentThread->getName() );
-        currentThread->Finish();
+        myExit();
     }else if ((which == SyscallException) && (type == SC_Exec)) {
-        printf( "EXEC, initiated by user program %s.\n", currentThread->getName() );
+        arg1 = machine->ReadRegister(4);
+        myExec( arg1 );
     }else if ((which == SyscallException) && (type == SC_Join)) {
         printf( "JOIN, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Create)) {

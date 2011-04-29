@@ -90,7 +90,6 @@ AddrSpace::AddrSpace(OpenFile *executable){
         ASSERT( pageNum >= 0 );
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = pageNum;
-        printf( "Virtual page %d -> Physical page %d\n", i, pageNum );
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -101,7 +100,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
 
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
-    bzero(machine->mainMemory, size);
+    //bzero(machine->mainMemory, size);
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
@@ -140,8 +139,6 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
     DEBUG( 'a', "Copying address space, num pages %d, size %d\n", 
             numPages, numPages * PageSize );
 
-    printf( "Copying address space, num pages %d, size %d\n", 
-            numPages, numPages * PageSize );
     // first, set up the translation 
     spaceDest->pageTable = new TranslationEntry[numPages];
     spaceDest->numPages = numPages;
@@ -151,7 +148,6 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
         ASSERT( pageNum >= 0 );
         spaceDest->pageTable[i].virtualPage = i;
         spaceDest->pageTable[i].physicalPage = pageNum;
-        printf( "Virtual page %d -> Physical page %d\n", i, pageNum );
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
                 machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), PageSize);
         spaceDest->pageTable[i].valid = TRUE;
@@ -218,11 +214,9 @@ int AddrSpace::ReadFile( int vAddr, OpenFile* file, int size, int fileAddr ){
  
         // translate should return the offset in bytes from mainMemory
         bool successful = Translate( vAddr, &pAddr );
-        printf( "vAddr %d -> pAddr %d\n", vAddr, pAddr );
         
         if( ! successful ) return -1;
 
-        printf("Copying %d bytes to %d main mem addr\n ", copySize, machine->mainMemory + pAddr);
         bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
 
         size -= PageSize;
