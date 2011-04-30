@@ -32,8 +32,10 @@ extern Timer *timer;				// the hardware alarm clock
 #ifdef USER_PROGRAM
 #include "machine.h"
 #include "memoryManager.h"
+#include "processManager.h"
 extern Machine* machine;	// user program memory and registers
 extern MemoryManager* memMgr;
+extern ProcessManager* procMgr;
 extern char* diskBuffer;
 #endif
 

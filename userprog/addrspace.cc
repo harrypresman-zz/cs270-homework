@@ -59,6 +59,8 @@ static void SwapHeader (NoffHeader *noffH){
 //----------------------------------------------------------------------
 
 AddrSpace::AddrSpace(OpenFile *executable){
+
+    pcb = new PCB( procMgr->getPID() , -1 ,currentThread);
     NoffHeader noffH;
 
     unsigned int i, size;
@@ -94,12 +96,12 @@ AddrSpace::AddrSpace(OpenFile *executable){
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+        bzero( machine->mainMemory + pageNum * PageSize, PageSize );    // zero out the addresses used only by this user space
         // a separate page, we could set its 
         // pages to be read-only
     }
 
-    // zero out the addresses used only by this user space
-    bzero( machine->mainMemory + pageTable[0].physicalPage * PageSize, size );
+
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
@@ -130,6 +132,7 @@ AddrSpace::~AddrSpace(){
     for( int i = 0; i < numPages; i++ )
         memMgr->clearPage( pageTable[i].physicalPage );
     delete pageTable;
+    delete pcb;
 }
 
 
@@ -140,6 +143,7 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
     // first, set up the translation table
     spaceDest->pageTable = new TranslationEntry[numPages];
     spaceDest->numPages = numPages;
+    
 
     // we need to duplicate all the pages into the new addrSpace
     for (int i = 0; i < numPages; i++) {

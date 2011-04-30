@@ -72,7 +72,7 @@ void jumpPC( int newPC ){
 }
 
 void myExit(){
-    printf( "EXIT, initiated by user program %s.\n", currentThread->getName() );
+    printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", currentThread->getName(),currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
     delete currentThread->space;
     currentThread->Finish();
 }
@@ -80,10 +80,10 @@ void myExit(){
 void myExec( int vAddr ){
     int pAddr;
 
-    currentThread->space->Translate( vAddr, &pAddr );
+    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
 
-    char* file = new char[ strlen( machine->mainMemory + pAddr ) ];
-    strcpy( file, machine->mainMemory + pAddr );
+    char* file = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
+    strcpy( file, machine->mainMemory + pAddr ); //we need a char* from mem
 
     OpenFile* executable = fileSystem->Open( file );
 
@@ -96,11 +96,16 @@ void myExec( int vAddr ){
     AddrSpace* space = new AddrSpace( executable );
     forkedThread->space = space;
 
+    forkedThread->space->pcb->parentPID =  currentThread->space->pcb->PID;
+    forkedThread->space->pcb->thread = forkedThread;
     delete file;
     delete executable;			// close file
 
     forkedThread->Fork( execBridge, 0 );
+    printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
     currentThread->Yield();
+    
+    machine->WriteRegister(2, currentThread->space->pcb->PID);
 }
 
 void execBridge( int newPC ){
@@ -115,14 +120,18 @@ void execBridge( int newPC ){
 }
 
 void myFork( int newPC ){
-    printf( "FORK, initiated by user program %s.\n", currentThread->getName() );
+    
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
     forkedThread->space = new AddrSpace;
     currentThread->space->CopyAddrSpace( forkedThread->space );
+    int newPID = procMgr->getPID();
+    forkedThread->space->pcb = new PCB(newPID, currentThread->space->pcb->PID,forkedThread);
+    printf( "FORK, initiated by user program %s. pid:%d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID  );
     forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
     printf("returned from fork\n");
+    machine->WriteRegister(2, newPID);
 }
 
 void forkBridge( int newPC ){
@@ -163,7 +172,7 @@ void ExceptionHandler(ExceptionType which){
         arg1 = machine->ReadRegister(4);
         myFork( arg1 );
     }else if ((which == SyscallException) && (type == SC_Yield)) {
-        printf( "YIELD, initiated by user program.\n");
+        printf( "YIELD, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
         currentThread->Yield();
     } else {
         printf("Unexpected user mode exception %d %d\n", which, type);

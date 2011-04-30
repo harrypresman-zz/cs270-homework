@@ -30,6 +30,7 @@ SynchDisk   *synchDisk;
 #ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
 Machine *machine;	// user program memory and registers
 MemoryManager* memMgr;
+ProcessManager* procMgr;
 char* diskBuffer;
 #endif
 
@@ -148,6 +149,7 @@ void Initialize(int argc, char **argv){
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
     memMgr = new MemoryManager;
+    procMgr = new ProcessManager;
     diskBuffer = new char[ PageSize ];
 #endif
 
@@ -179,6 +181,7 @@ Cleanup()
 #ifdef USER_PROGRAM
     delete machine;
     delete memMgr;
+    delete procMgr;
 #endif
 
 #ifdef FILESYS_NEEDED

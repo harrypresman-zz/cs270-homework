@@ -13,9 +13,11 @@
 #include "syscall.h"
 
 int main(){
+    
     Create("apple");
     Open("apple");
     Read(0, 1, 1);
+    Yield();
     Write(0, 1, 1);
     Close(1);
 }
