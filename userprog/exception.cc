@@ -71,10 +71,13 @@ void jumpPC( int newPC ){
     //machine->registers[RetAddrReg] += 8;
 }
 
-void myExit(){
+void myExit(int exitStatus){
     printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", currentThread->getName(),currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
+    procMgr->setExitStatus(currentThread->space->pcb->PID, exitStatus);
     delete currentThread->space;
     currentThread->Finish();
+    
+    machine->WriteRegister(2, exitStatus);
 }
 
 void myExec( int vAddr ){
@@ -105,7 +108,7 @@ void myExec( int vAddr ){
     printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
     currentThread->Yield();
     
-    machine->WriteRegister(2, currentThread->space->pcb->PID);
+    machine->WriteRegister(2, forkedThread->space->pcb->PID);
 }
 
 void execBridge( int newPC ){
@@ -127,6 +130,7 @@ void myFork( int newPC ){
     currentThread->space->CopyAddrSpace( forkedThread->space );
     int newPID = procMgr->getPID();
     forkedThread->space->pcb = new PCB(newPID, currentThread->space->pcb->PID,forkedThread);
+    procMgr->storePCB( forkedThread->space->pcb );
     printf( "FORK, initiated by user program %s. pid:%d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID  );
     forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
@@ -152,12 +156,13 @@ void ExceptionHandler(ExceptionType which){
         printf( "Shutdown, initiated by user program %s.\n", currentThread->getName() );
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-        myExit();
+        myExit(machine->ReadRegister(4));
     }else if ((which == SyscallException) && (type == SC_Exec)) {
         arg1 = machine->ReadRegister(4);
         myExec( arg1 );
     }else if ((which == SyscallException) && (type == SC_Join)) {
-        printf( "JOIN, initiated by user program %s.\n", currentThread->getName() );
+        printf( "JOIN, initiated by user program %s. Waiting on pid:%d \n", currentThread->getName(), machine->ReadRegister(4) );
+        procMgr->join(machine->ReadRegister(4));
     }else if ((which == SyscallException) && (type == SC_Create)) {
         printf( "CREATE, initiated by user program %s.\n", currentThread->getName() );
     }else if ((which == SyscallException) && (type == SC_Open)) {

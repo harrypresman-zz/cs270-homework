@@ -8,6 +8,5 @@ PCB::PCB( int pid, int parentPid, Thread* t ){
 }
 PCB::~PCB(){ 
  procMgr->clearPID(PID);
-
 }
 

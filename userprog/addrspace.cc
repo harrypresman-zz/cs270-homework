@@ -61,6 +61,7 @@ static void SwapHeader (NoffHeader *noffH){
 AddrSpace::AddrSpace(OpenFile *executable){
 
     pcb = new PCB( procMgr->getPID() , -1 ,currentThread);
+    procMgr->storePCB(pcb);
     NoffHeader noffH;
 
     unsigned int i, size;
