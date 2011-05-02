@@ -19,5 +19,6 @@ int main(){
     Read(0, 1, 1);
     Yield();
     Write(0, 1, 1);
+    Yield();
     Close(1);
 }

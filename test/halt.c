@@ -16,20 +16,23 @@ void testFunc(){
     int x = 5;
     x += 5;
     x -= 2;
-    Exit(1);
+    Exit(0);
 }
 
 int main(){
+    int pid;
+    
     Fork(testFunc);
     Exec("test/halt2");
-    Join(1);
+    pid = Exec("test/halt2");
+    Join(pid);
     Create("apple");
-    Open("apple");
+    //Open("apple");
     Read(0, 1, 1);
     Write(0, 1, 1);
     Close(1);
 
-    Fork(testFunc);
+    //Fork(testFunc);
     Yield();
     Halt();
     /* not reached */
