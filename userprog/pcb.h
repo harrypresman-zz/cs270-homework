@@ -8,6 +8,9 @@
 #define PCB_H
 
 #include "thread.h"
+#include "bitmap.h"
+#include "userOpenFile.h"
+#define MAX_OPEN_FILES 20
 
 class Thread;
 class PCB{
@@ -18,6 +21,12 @@ class PCB{
         int PID;
         int parentPID;
         Thread* thread;
+        UserOpenFile** openFiles;
+        int numOpenFiles;
+        //BitMap openFileMap;
+        int addNewOpenFile(UserOpenFile *o);
+        
+        
 };
 
 #endif

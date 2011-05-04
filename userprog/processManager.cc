@@ -1,5 +1,6 @@
 #include "processManager.h"
 #include "bitmap.h"
+#include <string.h>
 
 
 ProcessManager::ProcessManager(){
@@ -8,6 +9,8 @@ ProcessManager::ProcessManager(){
     conditionTable = new Condition*[MAX_PROCS];
     lockTable = new Lock*[MAX_PROCS];
     bitLock = new Lock("bitLock");
+    sysOpenFileTable = new SysOpenFile*[SYS_MAX_OPEN_FILES];
+    sysOpenFileMap = new BitMap(SYS_MAX_OPEN_FILES);
     
 }
 
@@ -16,6 +19,9 @@ ProcessManager::~ProcessManager(){
     delete pcbTable;//each pcb is cleaned up by addrspace
     //TODO clean up conditions and locks based on bitmap
     delete bitLock;
+    
+    //TODO clean up sysOpenFile Table
+    delete sysOpenFileMap;
 }
 
 int ProcessManager::getPID(){
@@ -63,3 +69,26 @@ void ProcessManager::setExitStatus(int pid, int exitStatus){
 }
 
 
+//TODO find the right return type
+SysOpenFile* ProcessManager::getOpenFile( char* fileName ){
+
+  for (int i=0; i < SYS_MAX_OPEN_FILES; i++){\
+    if ( sysOpenFileMap->Test(i)){
+      //we have a file in this spot of the table
+      if ( strcmp(sysOpenFileTable[i]->fileName, fileName) == 0 ) {
+        //we have a match 
+        return sysOpenFileTable[i];
+      } //IF   
+    } //IF
+  } //FOR
+  return NULL;
+}
+
+
+SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileName ){
+  int index = sysOpenFileMap->Find();
+  
+  SysOpenFile* sOF = new SysOpenFile(openFile, fileName, index);
+  sysOpenFileTable[index] = sOF;
+  return sOF;
+}

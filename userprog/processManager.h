@@ -10,8 +10,10 @@
 #include "bitmap.h"
 #include "pcb.h"
 #include "synch.h"
+#include "sysOpenFile.h"
 
 #define MAX_PROCS 10
+#define SYS_MAX_OPEN_FILES 20
 
 class ProcessManager{
     public:
@@ -25,14 +27,18 @@ class ProcessManager{
         void storePCB(PCB *p);
         int join(int pid);
         void setExitStatus(int pid, int exitStatus);
+        SysOpenFile* getOpenFile( char* fileName );
+        SysOpenFile* createNewSysFile( OpenFile* openFile, char* fileName);
 
     private:
 		PCB** pcbTable; //the array of PCBS use bitmap to know what is alive
 		Condition** conditionTable; //each PCB gets a condition
 		Lock** lockTable; //lock required to acquire condition
 		Lock* bitLock;
-        BitMap* bitmap; 
-        int returnStatus[MAX_PROCS]; // array of return statuses for threads waiting on join
+    BitMap* bitmap; 
+    int returnStatus[MAX_PROCS]; // array of return statuses for threads waiting on join
+    SysOpenFile** sysOpenFileTable;
+    BitMap* sysOpenFileMap;
 };
 
 #endif
