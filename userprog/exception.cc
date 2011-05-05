@@ -53,6 +53,9 @@
 #define NextPCReg	35	// Next program counter (for branch delay) 
 #define PrevPCReg	36	// Previous program counter (for debugging)
 
+#define READ_OP 1
+#define WRITE_OP 2
+
 void myFork( int newPC );
 void forkBridge( int newPC );
 void myExec( int vAddr );
@@ -71,22 +74,30 @@ void jumpPC( int newPC ){
     //machine->registers[RetAddrReg] += 8;
 }
 
+char* getString( int vAddr ){
+    int pAddr;
+    // get the mem addr from register that holds exec name as string
+    currentThread->space->Translate( vAddr, &pAddr ); 
+
+    char* str = new char[ strlen( machine->mainMemory + pAddr ) ]; // create
+    strcpy( str, machine->mainMemory + pAddr ); // we need a char* from mem
+
+    return str;
+}
+
 void myExit(int exitStatus){
-    printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", currentThread->getName(),currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
+    printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
+            currentThread->getName(), currentThread->space->pcb->PID, 
+            currentThread->space->pcb->parentPID );
     procMgr->setExitStatus(currentThread->space->pcb->PID, exitStatus);
     delete currentThread->space;
     currentThread->Finish();
-    
+
     machine->WriteRegister(2, exitStatus);
 }
 
 void myExec( int vAddr ){
-    int pAddr;
-
-    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
-
-    char* file = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
-    strcpy( file, machine->mainMemory + pAddr ); //we need a char* from mem
+    char* file = getString( vAddr );
 
     OpenFile* executable = fileSystem->Open( file );
 
@@ -107,7 +118,7 @@ void myExec( int vAddr ){
     forkedThread->Fork( execBridge, 0 );
     printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
     currentThread->Yield();
-    
+
     machine->WriteRegister(2, forkedThread->space->pcb->PID);
 }
 
@@ -117,21 +128,23 @@ void execBridge( int newPC ){
 
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
-	                        // the address space exits
-                    	    // by doing the syscall "exit"printf( "EXEC, initiated
-                            // by user program %s.\n", currentThread->getName() );
+    // the address space exits
+    // by doing the syscall "exit"printf( "EXEC, initiated
+    // by user program %s.\n", currentThread->getName() );
 }
 
 void myFork( int newPC ){
-    
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
     forkedThread->space = new AddrSpace;
     currentThread->space->CopyAddrSpace( forkedThread->space );
     int newPID = procMgr->getPID();
-    forkedThread->space->pcb = new PCB(newPID, currentThread->space->pcb->PID,forkedThread);
+    forkedThread->space->pcb = new PCB(newPID, currentThread->space->pcb->PID,
+            forkedThread);
     procMgr->storePCB( forkedThread->space->pcb );
-    printf( "FORK, initiated by user program %s. pid:%d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID  );
+    printf( "FORK, initiated by user program %s. pid:%d parentPID:%d \n", 
+            currentThread->getName(), currentThread->space->pcb->PID, 
+            currentThread->space->pcb->parentPID );
     forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
     printf("returned from fork\n");
@@ -148,171 +161,138 @@ void forkBridge( int newPC ){
     machine->Run();
 }
 
-// FILESYSTEM CALLS
+/*
+ * FILESYSTEM CALLS
+ */
 
-void Create(int vAddr){
-    int pAddr;
-
-    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
-
-    char* fileName = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
-    strcpy( fileName, machine->mainMemory + pAddr ); //we need a char* from mem
-    fileSystem->Create(fileName,0);
+void myCreate( int vAddr ){
+    printf( "CREATE, initiated by user program %s.\n", 
+            currentThread->getName() );
+    char* fileName = getString( vAddr );
+    fileSystem->Create( fileName, 0 );
 }
 
-void Open(int vAddr){
-    int pAddr;
-
-    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
-
-    char* fileName = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
-    strcpy( fileName, machine->mainMemory + pAddr ); //we need a char* from mem
-    OpenFile *file = fileSystem->Open(fileName);
-    SysOpenFile *sysOpenFile =  procMgr->getOpenFile(fileName);
-    if (sysOpenFile == NULL){
-      //First time opening
-      sysOpenFile = procMgr->createNewSysFile(file,fileName);
-    }
-    else{
-      //Some other thread had already opened 
-      sysOpenFile->numUsers++;
-
-    }
+void myOpen( int vAddr ){
+    char* fileName = getString( vAddr );
     
-    //Create a userOpenFile to store on PCB
-    UserOpenFile* userOpenFile = new UserOpenFile(fileName,sysOpenFile);
-    int res = currentThread->space->pcb->addNewOpenFile(userOpenFile);
-    if (res == -1){
-      delete userOpenFile; //TODO what to do if it already was open by PCB
-    }
-    if(sysOpenFile != NULL){    
-    
-      machine->WriteRegister(2, sysOpenFile->fd);
-      
-    }
-    else{
-      //unable to create sysOpenFile. hit limit?
-      
-      machine->WriteRegister(2, -1);
-    }
+    OpenFile* file = fileSystem->Open( fileName );
+    SysOpenFile* sysOpenFile = procMgr->getOpenFile( fileName, file );
+
+    if( sysOpenFile == NULL ) return; // no open spots left
+
+    UserOpenFile* userOpenFile = currentThread->space->pcb->getOpenFile( fileName, sysOpenFile );
+
+    machine->WriteRegister( 2, sysOpenFile->fd );
+    printf( "OPEN, initiated by user program %s, assigned FD %d.\n", 
+            currentThread->getName(), userOpenFile->fd );
 }
 
-void CloseFileSys( OpenFileId id ){
-	procMgr->closeFile(id);
-	currentThread->space->pcb->closeFile(id);
+void myClose( int vAddr ){
+    char* fileName = getString( vAddr );
+    int fd = procMgr->getFD( fileName );
+    printf( "CLOSE %s, FD %d, initiated by user program %s.\n",
+            fileName, fd, currentThread->getName() );
+    currentThread->space->pcb->closeFile( fd );
+    procMgr->closeFile( fd );
 }
-
 
 //LEFTOFF 
-//Added Sys due to global namespace function conflicts
-int ReadFileSys(char *buffer, int size, OpenFileId id){
-	//TODO
-	return 0;
+int myRead( int vAddr, int size, OpenFileId fd ){
+    printf( "READ, initiated by user program %s.\n", 
+            currentThread->getName() );
+    char* buffer = getString( vAddr );
+    //TODO
+    return 0;
 }
 
 //LEFTOFF
-int WriteFileSys(char *buffer, int size, OpenFileId id){
-	if (id == ConsoleOutput){
-		printf("%s\n",buffer);
-	}
-	else{
-		//TODO
-	
-	}
-	return 0;
+int myWrite( int vAddr, int size, OpenFileId fd ){
+    printf( "WRITE, initiated by user program %s.\n", 
+            currentThread->getName() );
+    char* buffer = getString( vAddr );
+    // ConsoleOutput is not assigned yet
+    /*
+    if( fd == ConsoleOutput ){
+        printf( "%s\n", buffer );
+    }else{
+        //TODO
+    }
+    */
+    return 0;
 }
 
-#define READ_OP 1
-#define WRITE_OP 2
 //LEFTOFF not tested not right
-int userReadWrite(int vAddr, OpenFile* file, int size, int fileAddr, int opType ){
-	//TODO helper
-	
-	int copySize = PageSize; //diskBuffer size
+int userReadWrite( int vAddr, OpenFile* file, int size, int fileAddr, int opType ){
+    //TODO helper
+    int copySize = PageSize; // diskBuffer size
     while( size > 0 ){
         int pAddr;
 
         if( size < PageSize ) copySize = size;
 
-		//do we have an openfile at this point? 
+        // do we have an openfile at this point? 
         file->ReadAt( diskBuffer, copySize, fileAddr );
- 
+
         // translate should return the offset in bytes from mainMemory
         bool successful = currentThread->space->Translate( vAddr, &pAddr );
-        
+
         if( ! successful ) return -1;
 
-		if (opType == READ_OP)
-	        bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
-	    else if (opType == WRITE_OP ) //TODO this is wrong, but think this is the idea of helper	    
-	        bcopy( machine->mainMemory + pAddr,  diskBuffer, copySize );
-
+        if( opType == READ_OP ){
+            bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
+        }else if( opType == WRITE_OP ){ //TODO this is wrong, but think this is the idea of helper	    
+            bcopy( machine->mainMemory + pAddr,  diskBuffer, copySize );
+        }
         size -= PageSize;
         vAddr += copySize;
         fileAddr += copySize;
     }
-
-    return 1; 
-	
-	return 0;
+    return 1;
+    return 0;
 }
 
-void ExceptionHandler(ExceptionType which){
-    int type = machine->ReadRegister(2);
-    int arg1, arg2, arg3, arg4;
+void ExceptionHandler( ExceptionType which ){
+    int type = machine->ReadRegister( 2 );
 
-    if ((which == SyscallException) && (type == SC_Halt)) {
-        printf( "Shutdown, initiated by user program %s.\n", currentThread->getName() );
+    int arg1 = machine->ReadRegister( 4 );
+    int arg2 = machine->ReadRegister( 5 );
+    int arg3 = machine->ReadRegister( 6 );
+    int arg4 = machine->ReadRegister( 7 );
+
+    if( (which == SyscallException) && (type == SC_Halt) ){
+        printf( "Shutdown, initiated by user program %s.\n", 
+                currentThread->getName() );
         interrupt->Halt();
-    }else if ((which == SyscallException) && (type == SC_Exit)) {
-        myExit(machine->ReadRegister(4));
-    }else if ((which == SyscallException) && (type == SC_Exec)) {
-        arg1 = machine->ReadRegister(4);
+    }else if( (which == SyscallException) && (type == SC_Exit) ){
+        myExit( arg1 );
+    }else if( (which == SyscallException) && (type == SC_Exec) ){
         myExec( arg1 );
-    }else if ((which == SyscallException) && (type == SC_Join)) {
-        printf( "JOIN, initiated by user program %s. Waiting on pid:%d \n", currentThread->getName(), machine->ReadRegister(4) );
-        procMgr->join(machine->ReadRegister(4));
-    }else if ((which == SyscallException) && (type == SC_Create)) {
-        printf( "CREATE, initiated by user program %s.\n", currentThread->getName() );
-        arg1 = machine->ReadRegister(4);
-        Create( arg1 );
-    }else if ((which == SyscallException) && (type == SC_Open)) {
-        printf( "OPEN, initiated by user program %s.\n", currentThread->getName() );
-        arg1 = machine->ReadRegister(4);
-        Open( arg1 );
-    }else if ((which == SyscallException) && (type == SC_Read)) {
-        printf( "READ, initiated by user program %s.\n", currentThread->getName() );
-        /*
-        arg1 = machine->ReadRegister(4);
-        arg2 = machine->ReadRegister(5);
-        arg3 = machine->ReadRegister(6);
-        
+    }else if( (which == SyscallException) && (type == SC_Join) ){
+        printf( "JOIN, initiated by user program %s. Waiting on pid:%d \n", 
+                currentThread->getName(), machine->ReadRegister(4) );
+        procMgr->join( arg1 );
+    }else if( (which == SyscallException) && (type == SC_Create) ){
+        myCreate( arg1 );
+    }else if( (which == SyscallException) && (type == SC_Open) ){
+        myOpen( arg1 );
+    }else if( (which == SyscallException) && (type == SC_Read) ){
+        myRead( arg1, arg2, arg3 );
+    }else if( (which == SyscallException) && (type == SC_Write) ){
         //LEFTOFF convert arg1 into a char*? 
         //Is this where we should utilize the helper function?
-        ReadFileSys((char *)arg1, arg2, arg3);
-        */
-    }else if ((which == SyscallException) && (type == SC_Write)) {
-        printf( "WRITE, initiated by user program %s.\n", currentThread->getName() );
-        arg1 = machine->ReadRegister(4);
-        arg2 = machine->ReadRegister(5);
-        arg3 = machine->ReadRegister(6);
-        
-        //LEFTOFF convert arg1 into a char*? 
-        //Is this where we should utilize the helper function?
-        WriteFileSys((char *)arg1, arg2, arg3);
-    }else if ((which == SyscallException) && (type == SC_Close)) {
-        printf( "CLOSE, initiated by user program %s.\n", currentThread->getName() );
-        arg1 = machine->ReadRegister(4);
-        CloseFileSys( arg1 );
-    }else if ((which == SyscallException) && (type == SC_Fork)) {
-        arg1 = machine->ReadRegister(4);
+        myWrite( arg1, arg2, arg3 );
+    }else if( (which == SyscallException) && (type == SC_Close) ){
+        myClose( arg1 );
+    }else if( (which == SyscallException) && (type == SC_Fork) ){
         myFork( arg1 );
-    }else if ((which == SyscallException) && (type == SC_Yield)) {
-        printf( "YIELD, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
+    }else if( (which == SyscallException) && (type == SC_Yield) ){
+        printf( "YIELD, initiated by user program. %s myPID: %d parentPID:%d \n", 
+                currentThread->getName(), currentThread->space->pcb->PID, 
+                currentThread->space->pcb->parentPID );
         currentThread->Yield();
-    } else {
+    }else{
         printf("Unexpected user mode exception %d %d\n", which, type);
-        ASSERT(FALSE);
+        ASSERT( FALSE );
     }
     incrementPC();
 }

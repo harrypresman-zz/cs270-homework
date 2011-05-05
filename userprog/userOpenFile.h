@@ -4,12 +4,14 @@
 #include "sysOpenFile.h"
 
 class UserOpenFile{
-  public:
-    char* fileName;
-    SysOpenFile* sysOpenFile;
-    int position;
-    int sysOpenFileIndex;
-    UserOpenFile(char * fileName, SysOpenFile* sysOpenFile); //set position = 0
+    public:
+        UserOpenFile(char * fileName, SysOpenFile* sysOpenFile); // set position = 0
+
+        char* fileName;
+        SysOpenFile* sysOpenFile;
+        int position;
+        int fd;
+        int sysOpenFileIndex;
 };
 
 #endif

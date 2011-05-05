@@ -2,24 +2,40 @@
 #include "system.h"
 
 PCB::PCB( int pid, int parentPid, Thread* t ){
-  PID = pid;
-  parentPID = parentPid;
-  thread= t;
-  openFiles = new UserOpenFile*[MAX_OPEN_FILES];
-  numOpenFiles = 0;
-//  openFileMap = BitMap(MAX_OPEN_FILES);
+    PID = pid;
+    parentPID = parentPid;
+    thread = t;
+    openFileTable = new UserOpenFile*[MAX_OPEN_FILES];
+    openFileMap = new BitMap( MAX_OPEN_FILES );
 }
+
 PCB::~PCB(){ 
- procMgr->clearPID(PID);
+    procMgr->clearPID( PID );
 }
 
-int PCB::addNewOpenFile( UserOpenFile* o ){
- //TODO
-  return -1 ; //already exists
+UserOpenFile* PCB::getOpenFile( char* name, SysOpenFile* file ){
+    UserOpenFile* openFile;
+    if( openFileMap->Test( file->fd )){ // file open already
+        openFile = openFileTable[ file->fd ];
+    }else{
+        openFileMap->Mark( file->fd );
+        openFile = new UserOpenFile( name, file );
+        openFileTable[ file->fd ] = openFile;
+    }
+    return openFile;
 }
 
-void PCB::closeFile(int id){
-	//TODO
+bool PCB::addNewOpenFile( UserOpenFile* file ){
+    if( openFileMap->Test( file->fd ) ) return false;
+    else{
+        openFileMap->Mark( file->fd );
+        return true;
+    }
+}
 
+void PCB::closeFile( int fd ){
+    openFileMap->Clear( fd );
+    delete openFileTable[ fd ];
+    openFileTable[ fd ] = NULL;
 }
 

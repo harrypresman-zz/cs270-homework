@@ -16,24 +16,39 @@ void testFunc(){
     int x = 5;
     x += 5;
     x -= 2;
-    Exit(0);
+    Exit( 0 );
 }
 
 int main(){
-    int pid;
-    
-    Fork(testFunc);
-    Exec("test/halt2");
-    pid = Exec("test/halt2");
-    Join(pid);
-    Create("apple");
-    //Open("apple");
-    Read(0, 1, 1);
-    Write(0, 1, 1);
-    Close(1);
+    int pid, fd1, fd2, fd3;
+    char* buf = "banana";
+    int size = 7;
 
-    //Fork(testFunc);
+    // test fork, exec, join, yield
+/*
+    Fork( testFunc );
+    Exec( "test/halt2" );
+    pid = Exec( "test/halt2" );
+    Join( pid );
     Yield();
+*/
+    // test create, open, write, read, close
+    Create( "apple" );
+    Create( "orange" );
+    Create( "mango" );
+    Create( "berry" );
+
+    fd1 = Open( "apple" );
+    fd2 = Open( "orange" );
+    fd3 = Open( "berry" );
+    Write( buf, size, fd1 );
+    Read( buf, size, fd1 );
+    Close( "apple" );
+    Close( "berry" );
+    Close( "orange" );
+    fd1 = Open( "berry" );
+    Close( "berry" );
+
     Halt();
     /* not reached */
 }

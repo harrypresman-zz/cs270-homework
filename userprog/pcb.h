@@ -10,23 +10,24 @@
 #include "thread.h"
 #include "bitmap.h"
 #include "userOpenFile.h"
+
 #define MAX_OPEN_FILES 20
 
 class Thread;
+
 class PCB{
     public:        
         PCB( int pid, int parentPid, Thread* t );
         ~PCB();
+        UserOpenFile* getOpenFile( char* name, SysOpenFile* file );
+        bool addNewOpenFile( UserOpenFile* file );
+        void closeFile( int fd );
 
         int PID;
         int parentPID;
         Thread* thread;
-        UserOpenFile** openFiles;
-        int numOpenFiles;
-        //BitMap openFileMap;
-        int addNewOpenFile(UserOpenFile *o);
-        void closeFile(int id);
-        
+        UserOpenFile** openFileTable;
+        BitMap* openFileMap;
 };
 
 #endif
