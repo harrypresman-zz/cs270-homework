@@ -183,6 +183,11 @@ void myOpen( int vAddr ){
     char* fileName = getString( vAddr );
     
     OpenFile* file = fileSystem->Open( fileName );
+    if( file == NULL ){
+        myCreate( vAddr ); // file not found!!
+        file = fileSystem->Open( fileName );
+    }
+
     SysOpenFile* sysOpenFile = procMgr->getOpenFile( fileName, file );
 
     if( sysOpenFile == NULL ) return; // no open spots left
