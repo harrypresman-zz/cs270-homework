@@ -43,11 +43,14 @@ int main(){
     fd3 = Open( "berry" );
     Write( buf, size, fd1 );
     Read( buf, size, fd1 );
+    Write( buf, size, fd2 );
+    Write( buf, size, fd3 );
     Close( "apple" );
     Close( "berry" );
     Close( "orange" );
-    fd1 = Open( "berry" );
-    Close( "berry" );
+    fd1 = Open( "mango" );
+    Write( buf, size, fd1 );
+    Close( "mango" );
 
     Halt();
     /* not reached */

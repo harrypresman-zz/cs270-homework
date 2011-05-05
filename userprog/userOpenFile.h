@@ -11,7 +11,6 @@ class UserOpenFile{
         SysOpenFile* sysOpenFile;
         int position;
         int fd;
-        int sysOpenFileIndex;
 };
 
 #endif

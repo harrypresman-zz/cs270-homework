@@ -28,6 +28,7 @@ class ProcessManager{
         int join(int pid);
         void setExitStatus(int pid, int exitStatus);
         SysOpenFile* getOpenFile( char* fileName, OpenFile* openFile );
+        SysOpenFile* getOpenFile( int fd );
         SysOpenFile* createNewSysFile( OpenFile* openFile, char* fileName);
         void closeFile( int id);
         int getFD( char* name );

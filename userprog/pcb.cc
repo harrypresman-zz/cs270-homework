@@ -25,6 +25,14 @@ UserOpenFile* PCB::getOpenFile( char* name, SysOpenFile* file ){
     return openFile;
 }
 
+UserOpenFile* PCB::getOpenFile( int fd ){
+    if( openFileMap->Test( fd )){ // file open already
+        return openFileTable[ fd ];
+    }else{
+        return NULL;
+    }
+}
+
 bool PCB::addNewOpenFile( UserOpenFile* file ){
     if( openFileMap->Test( file->fd ) ) return false;
     else{

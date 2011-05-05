@@ -20,10 +20,8 @@ ProcessManager::ProcessManager(){
     sysOpenFileMap = new BitMap(SYS_MAX_OPEN_FILES);
 
     // if we reserve these, we have to instantiate them...
-    /*
     sysOpenFileMap->Mark( CIN );
     sysOpenFileMap->Mark( COUT );
-    */
 }
 
 ProcessManager::~ProcessManager(){
@@ -78,7 +76,6 @@ void ProcessManager::setExitStatus( int pid, int exitStatus ){
     returnStatus[pid] = exitStatus;
 }
 
-//TODO find the right return type
 SysOpenFile* ProcessManager::getOpenFile( char* fileName, OpenFile* openFile ){
     int fd = getFD( fileName );
     if( fd != -1 ){
@@ -96,6 +93,14 @@ SysOpenFile* ProcessManager::getOpenFile( char* fileName, OpenFile* openFile ){
     return file;
 }
 
+SysOpenFile* ProcessManager::getOpenFile( int fd ){
+    if( sysOpenFileMap->Test( fd ) ){
+        return sysOpenFileTable[fd];
+    }else{
+        return NULL;
+    }
+}
+
 SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileName ){
     int index = sysOpenFileMap->Find();
 
@@ -105,12 +110,13 @@ SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileNam
 }
 
 void ProcessManager::closeFile( int fd ){
-    // we have a match
     // TODO: instantiate a lock if we want to use it
 //    fsLock[fd]->Acquire();
     sysOpenFileTable[fd]->numUsers--;
     if( sysOpenFileTable[fd]->numUsers == 0 ){
-        fileSystem->Remove( sysOpenFileTable[fd]->fileName );
+        // TODO: do we want to leave the file, or delete it?
+        //fileSystem->Remove( sysOpenFileTable[fd]->fileName );
+        //delete sysOpenFileTable[fd]->openFile;
         delete sysOpenFileTable[fd];
         sysOpenFileTable[fd] = NULL;
         sysOpenFileMap->Clear(fd);
@@ -119,7 +125,8 @@ void ProcessManager::closeFile( int fd ){
 }
 
 int ProcessManager::getFD( char* name ){
-    for( int i = 0; i < SYS_MAX_OPEN_FILES; i++ ){
+    /// skip CIN and COUT
+    for( int i = 2; i < SYS_MAX_OPEN_FILES; i++ ){
         if( sysOpenFileMap->Test( i ) ){
             // we have a file in this spot of the table
             if ( strcmp( sysOpenFileTable[i]->fileName, name ) == 0 ){

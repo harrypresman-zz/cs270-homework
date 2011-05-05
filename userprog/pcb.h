@@ -20,6 +20,7 @@ class PCB{
         PCB( int pid, int parentPid, Thread* t );
         ~PCB();
         UserOpenFile* getOpenFile( char* name, SysOpenFile* file );
+        UserOpenFile* getOpenFile( int fd );
         bool addNewOpenFile( UserOpenFile* file );
         void closeFile( int fd );
 

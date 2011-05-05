@@ -85,6 +85,13 @@ char* getString( int vAddr ){
     return str;
 }
 
+void putString( char* str, int vAddr ){
+    int pAddr;
+    currentThread->space->Translate( vAddr, &pAddr );
+
+    strcpy( machine->mainMemory + pAddr, str );
+}
+
 void myExit(int exitStatus){
     printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
@@ -183,41 +190,58 @@ void myOpen( int vAddr ){
     UserOpenFile* userOpenFile = currentThread->space->pcb->getOpenFile( fileName, sysOpenFile );
 
     machine->WriteRegister( 2, sysOpenFile->fd );
-    printf( "OPEN, initiated by user program %s, assigned FD %d.\n", 
-            currentThread->getName(), userOpenFile->fd );
+    printf( "OPEN %s, initiated by user program %s, assigned FD %d.\n", 
+            fileName, currentThread->getName(), userOpenFile->fd );
 }
 
-void myClose( int vAddr ){
-    char* fileName = getString( vAddr );
-    int fd = procMgr->getFD( fileName );
-    printf( "CLOSE %s, FD %d, initiated by user program %s.\n",
-            fileName, fd, currentThread->getName() );
+void myClose( int fd ){
+    printf( "CLOSE FD %d, initiated by user program %s.\n",
+            fd, currentThread->getName() );
     currentThread->space->pcb->closeFile( fd );
     procMgr->closeFile( fd );
 }
 
 //LEFTOFF 
 int myRead( int vAddr, int size, OpenFileId fd ){
-    printf( "READ, initiated by user program %s.\n", 
-            currentThread->getName() );
-    char* buffer = getString( vAddr );
-    //TODO
+//    printf( "READ, initiated by user program %s.\n", 
+//            currentThread->getName() );
+    if( fd == ConsoleInput ){
+        diskBuffer[0] = getchar(); 
+        int pAddr;
+        currentThread->space->Translate( vAddr, &pAddr );
+        memcpy( machine->mainMemory + pAddr, diskBuffer, 1 );
+        machine->WriteRegister( 2, 1 );
+    }else{
+        // TODO
+        UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
+        int pos = file->position;
+        int numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, size, pos );
+        char buffer[numRead + 1];
+        memcpy( buffer, diskBuffer, numRead );
+        buffer[numRead] = '\0';
+        putString( buffer, vAddr );
+        file->position += size;
+//        printf( "Num read = %d\n", numRead );
+        machine->WriteRegister( 2, numRead );
+    }
     return 0;
 }
 
 //LEFTOFF
 int myWrite( int vAddr, int size, OpenFileId fd ){
-    printf( "WRITE, initiated by user program %s.\n", 
-            currentThread->getName() );
+//    printf( "WRITE, initiated by user program %s.\n", 
+//            currentThread->getName() );
     char* buffer = getString( vAddr );
     // ConsoleOutput is not assigned yet
-    /*
     if( fd == ConsoleOutput ){
-        printf( "%s\n", buffer );
+        printf( "%s", buffer );
     }else{
-        //TODO
+        // TODO
+        UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
+        int pos = file->position;
+        file->sysOpenFile->openFile->WriteAt( buffer, size, pos );
+        file->position += size;
     }
-    */
     return 0;
 }
 
