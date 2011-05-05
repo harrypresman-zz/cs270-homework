@@ -92,6 +92,18 @@ void putString( char* str, int vAddr ){
     strcpy( machine->mainMemory + pAddr, str );
 }
 
+void getMem( char* buffer, int vAddr, int size ){
+    int pAddr;
+    currentThread->space->Translate( vAddr, &pAddr ); 
+    memcpy( buffer, machine->mainMemory + pAddr, size );
+}
+
+void putMem( char* buffer, int vAddr, int size ){
+    int pAddr;
+    currentThread->space->Translate( vAddr, &pAddr ); 
+    memcpy( machine->mainMemory + pAddr, buffer, size ); 
+}
+
 void myExit(int exitStatus){
     printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
@@ -123,7 +135,9 @@ void myExec( int vAddr ){
     delete executable;			// close file
 
     forkedThread->Fork( execBridge, 0 );
-    printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", currentThread->getName(), currentThread->space->pcb->PID, currentThread->space->pcb->parentPID );
+    printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", 
+            currentThread->getName(), currentThread->space->pcb->PID, 
+            currentThread->space->pcb->parentPID );
     currentThread->Yield();
 
     machine->WriteRegister(2, forkedThread->space->pcb->PID);
@@ -212,21 +226,38 @@ int myRead( int vAddr, int size, OpenFileId fd ){
 //            currentThread->getName() );
     if( fd == ConsoleInput ){
         diskBuffer[0] = getchar(); 
-        int pAddr;
-        currentThread->space->Translate( vAddr, &pAddr );
-        memcpy( machine->mainMemory + pAddr, diskBuffer, 1 );
+        putMem( diskBuffer, vAddr, 1 );
         machine->WriteRegister( 2, 1 );
     }else{
-        // TODO
+        // LEFT OFF
         UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
         int pos = file->position;
-        int numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, size, pos );
-        char buffer[numRead + 1];
-        memcpy( buffer, diskBuffer, numRead );
-        buffer[numRead] = '\0';
-        putString( buffer, vAddr );
-        file->position += size;
-//        printf( "Num read = %d\n", numRead );
+        int numRead = 0;
+        int totNumRead = 0;
+        if( size > PageSize ){
+            int numPages = size/PageSize;
+            while( size > 0 ){
+                int pSize = (size > PageSize) ? PageSize : size % PageSize;
+                numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, pSize, pos );
+                totNumRead += numRead;
+                char buffer[numRead];
+                memcpy( buffer, diskBuffer, numRead );
+                putMem( buffer, vAddr, numRead );
+                pos += pSize;
+                size -= pSize;
+                vAddr += pSize;
+            }
+            numRead = totNumRead;
+            file->position = pos;
+        }else{
+            int numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, size, pos );
+            char buffer[numRead + 1];
+            memcpy( buffer, diskBuffer, numRead );
+            buffer[numRead] = '\0';
+            putString( buffer, vAddr );
+            file->position += size;
+            //        printf( "Num read = %d\n", numRead );
+        }
         machine->WriteRegister( 2, numRead );
     }
     return 0;
