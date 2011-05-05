@@ -148,6 +148,115 @@ void forkBridge( int newPC ){
     machine->Run();
 }
 
+// FILESYSTEM CALLS
+
+void Create(int vAddr){
+    int pAddr;
+
+    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
+
+    char* fileName = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
+    strcpy( fileName, machine->mainMemory + pAddr ); //we need a char* from mem
+    fileSystem->Create(fileName,0);
+}
+
+void Open(int vAddr){
+    int pAddr;
+
+    currentThread->space->Translate( vAddr, &pAddr );//get the mem addr from register that holds exec name as string
+
+    char* fileName = new char[ strlen( machine->mainMemory + pAddr ) ]; //create
+    strcpy( fileName, machine->mainMemory + pAddr ); //we need a char* from mem
+    OpenFile *file = fileSystem->Open(fileName);
+    SysOpenFile *sysOpenFile =  procMgr->getOpenFile(fileName);
+    if (sysOpenFile == NULL){
+      //First time opening
+      sysOpenFile = procMgr->createNewSysFile(file,fileName);
+    }
+    else{
+      //Some other thread had already opened 
+      sysOpenFile->numUsers++;
+
+    }
+    
+    //Create a userOpenFile to store on PCB
+    UserOpenFile* userOpenFile = new UserOpenFile(fileName,sysOpenFile);
+    int res = currentThread->space->pcb->addNewOpenFile(userOpenFile);
+    if (res == -1){
+      delete userOpenFile; //TODO what to do if it already was open by PCB
+    }
+    if(sysOpenFile != NULL){    
+    
+      machine->WriteRegister(2, sysOpenFile->fd);
+      
+    }
+    else{
+      //unable to create sysOpenFile. hit limit?
+      
+      machine->WriteRegister(2, -1);
+    }
+}
+
+void CloseFileSys( OpenFileId id ){
+	procMgr->closeFile(id);
+	currentThread->space->pcb->closeFile(id);
+}
+
+
+//LEFTOFF 
+//Added Sys due to global namespace function conflicts
+int ReadFileSys(char *buffer, int size, OpenFileId id){
+	//TODO
+	return 0;
+}
+
+//LEFTOFF
+int WriteFileSys(char *buffer, int size, OpenFileId id){
+	if (id == ConsoleOutput){
+		printf("%s\n",buffer);
+	}
+	else{
+		//TODO
+	
+	}
+	return 0;
+}
+
+#define READ_OP 1
+#define WRITE_OP 2
+//LEFTOFF not tested not right
+int userReadWrite(int vAddr, OpenFile* file, int size, int fileAddr, int opType ){
+	//TODO helper
+	
+	int copySize = PageSize; //diskBuffer size
+    while( size > 0 ){
+        int pAddr;
+
+        if( size < PageSize ) copySize = size;
+
+		//do we have an openfile at this point? 
+        file->ReadAt( diskBuffer, copySize, fileAddr );
+ 
+        // translate should return the offset in bytes from mainMemory
+        bool successful = currentThread->space->Translate( vAddr, &pAddr );
+        
+        if( ! successful ) return -1;
+
+		if (opType == READ_OP)
+	        bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
+	    else if (opType == WRITE_OP ) //TODO this is wrong, but think this is the idea of helper	    
+	        bcopy( machine->mainMemory + pAddr,  diskBuffer, copySize );
+
+        size -= PageSize;
+        vAddr += copySize;
+        fileAddr += copySize;
+    }
+
+    return 1; 
+	
+	return 0;
+}
+
 void ExceptionHandler(ExceptionType which){
     int type = machine->ReadRegister(2);
     int arg1, arg2, arg3, arg4;
@@ -165,14 +274,36 @@ void ExceptionHandler(ExceptionType which){
         procMgr->join(machine->ReadRegister(4));
     }else if ((which == SyscallException) && (type == SC_Create)) {
         printf( "CREATE, initiated by user program %s.\n", currentThread->getName() );
+        arg1 = machine->ReadRegister(4);
+        Create( arg1 );
     }else if ((which == SyscallException) && (type == SC_Open)) {
         printf( "OPEN, initiated by user program %s.\n", currentThread->getName() );
+        arg1 = machine->ReadRegister(4);
+        Open( arg1 );
     }else if ((which == SyscallException) && (type == SC_Read)) {
         printf( "READ, initiated by user program %s.\n", currentThread->getName() );
+        /*
+        arg1 = machine->ReadRegister(4);
+        arg2 = machine->ReadRegister(5);
+        arg3 = machine->ReadRegister(6);
+        
+        //LEFTOFF convert arg1 into a char*? 
+        //Is this where we should utilize the helper function?
+        ReadFileSys((char *)arg1, arg2, arg3);
+        */
     }else if ((which == SyscallException) && (type == SC_Write)) {
         printf( "WRITE, initiated by user program %s.\n", currentThread->getName() );
+        arg1 = machine->ReadRegister(4);
+        arg2 = machine->ReadRegister(5);
+        arg3 = machine->ReadRegister(6);
+        
+        //LEFTOFF convert arg1 into a char*? 
+        //Is this where we should utilize the helper function?
+        WriteFileSys((char *)arg1, arg2, arg3);
     }else if ((which == SyscallException) && (type == SC_Close)) {
         printf( "CLOSE, initiated by user program %s.\n", currentThread->getName() );
+        arg1 = machine->ReadRegister(4);
+        CloseFileSys( arg1 );
     }else if ((which == SyscallException) && (type == SC_Fork)) {
         arg1 = machine->ReadRegister(4);
         myFork( arg1 );

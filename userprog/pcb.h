@@ -25,7 +25,7 @@ class PCB{
         int numOpenFiles;
         //BitMap openFileMap;
         int addNewOpenFile(UserOpenFile *o);
-        
+        void closeFile(int id);
         
 };
 

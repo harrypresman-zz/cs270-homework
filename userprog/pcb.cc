@@ -14,7 +14,12 @@ PCB::~PCB(){
 }
 
 int PCB::addNewOpenFile( UserOpenFile* o ){
-
+ //TODO
   return -1 ; //already exists
+}
+
+void PCB::closeFile(int id){
+	//TODO
+
 }
 

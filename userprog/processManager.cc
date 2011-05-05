@@ -8,6 +8,7 @@ ProcessManager::ProcessManager(){
     pcbTable = new PCB*[MAX_PROCS];
     conditionTable = new Condition*[MAX_PROCS];
     lockTable = new Lock*[MAX_PROCS];
+    fsLock = new Lock*[SYS_MAX_OPEN_FILES];
     bitLock = new Lock("bitLock");
     sysOpenFileTable = new SysOpenFile*[SYS_MAX_OPEN_FILES];
     sysOpenFileMap = new BitMap(SYS_MAX_OPEN_FILES);
@@ -19,7 +20,7 @@ ProcessManager::~ProcessManager(){
     delete pcbTable;//each pcb is cleaned up by addrspace
     //TODO clean up conditions and locks based on bitmap
     delete bitLock;
-    
+    delete fsLock;
     //TODO clean up sysOpenFile Table
     delete sysOpenFileMap;
 }
@@ -91,4 +92,25 @@ SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileNam
   SysOpenFile* sOF = new SysOpenFile(openFile, fileName, index);
   sysOpenFileTable[index] = sOF;
   return sOF;
+}
+
+void ProcessManager::closeFile( int id) {
+  for (int i=0; i < SYS_MAX_OPEN_FILES; i++){\
+    if ( sysOpenFileMap->Test(i)){
+      //we have a file in this spot of the table
+      if ( id == sysOpenFileTable[i]->fd ) {
+        //we have a match 
+        fsLock[i]->Acquire();
+        sysOpenFileTable[i]->numUsers--;
+        if (sysOpenFileTable[i]->numUsers <=0){
+        	delete sysOpenFileTable[i]->openFile;
+        	delete sysOpenFileTable[i];
+        	sysOpenFileMap->Clear(i);
+        	
+        }
+        
+        fsLock[i]->Release();
+      } //IF   
+    } //IF
+  } //FOR
 }

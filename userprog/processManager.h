@@ -29,12 +29,14 @@ class ProcessManager{
         void setExitStatus(int pid, int exitStatus);
         SysOpenFile* getOpenFile( char* fileName );
         SysOpenFile* createNewSysFile( OpenFile* openFile, char* fileName);
+        void closeFile( int id);
 
     private:
 		PCB** pcbTable; //the array of PCBS use bitmap to know what is alive
 		Condition** conditionTable; //each PCB gets a condition
 		Lock** lockTable; //lock required to acquire condition
 		Lock* bitLock;
+		Lock** fsLock; //locks for openfile modification
     BitMap* bitmap; 
     int returnStatus[MAX_PROCS]; // array of return statuses for threads waiting on join
     SysOpenFile** sysOpenFileTable;
