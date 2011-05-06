@@ -30,7 +30,8 @@ int main()
     if( i > 0 ) {
         openfileid = Open(buffer);
         while(1) {
-            readnum = Read(filebuffer, 100, openfileid);
+            readnum = Read(filebuffer, 200, openfileid);
+            //readnum = Read(filebuffer, 100, openfileid);
             if(readnum==0) break;
             Write(filebuffer, readnum, output);
         }

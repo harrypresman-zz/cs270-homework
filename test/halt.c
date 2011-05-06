@@ -45,12 +45,12 @@ int main(){
     Read( buf, size, fd1 );
     Write( buf, size, fd2 );
     Write( buf, size, fd3 );
-    Close( "apple" );
-    Close( "berry" );
-    Close( "orange" );
+    Close( fd1 );
+    Close( fd3 );
+    Close( fd2 );
     fd1 = Open( "mango" );
     Write( buf, size, fd1 );
-    Close( "mango" );
+    Close( fd1 );
 
     Halt();
     /* not reached */

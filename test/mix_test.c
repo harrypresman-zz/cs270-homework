@@ -18,9 +18,9 @@ main()
 {
    
     OpenFileId OutFid, InFid;
-    int ret =335;
+    int ret = 335;
     int size = 9;
-    int stub =3;
+    int stub = 3;
     char buffer[20];
     
     Create("out");

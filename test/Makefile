@@ -38,7 +38,7 @@ INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
 all: shell matmult sort halt halt2 cat cp mix_test mix_test1 mix_test2 ncat org\
-	test1
+	test1 ncp ncp2 test2 test3 test3_1 test3_2
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -122,4 +122,40 @@ test1.o: test1.c
 test1: test1.o start.o
 	$(LD) $(LDFLAGS) start.o test1.o -o test1.coff
 	../bin/coff2noff test1.coff test1
+
+ncp.o: ncp.c
+	$(CC) $(CFLAGS) -c ncp.c
+ncp: ncp.o start.o
+	$(LD) $(LDFLAGS) start.o ncp.o -o ncp.coff
+	../bin/coff2noff ncp.coff ncp
+
+ncp2.o: ncp2.c
+	$(CC) $(CFLAGS) -c ncp2.c
+ncp2: ncp2.o start.o
+	$(LD) $(LDFLAGS) start.o ncp2.o -o ncp2.coff
+	../bin/coff2noff ncp2.coff ncp2
+
+test2.o: test2.c
+	$(CC) $(CFLAGS) -c test2.c
+test2: test2.o start.o
+	$(LD) $(LDFLAGS) start.o test2.o -o test2.coff
+	../bin/coff2noff test2.coff test2
+
+test3.o: test3.c
+	$(CC) $(CFLAGS) -c test3.c
+test3: test3.o start.o
+	$(LD) $(LDFLAGS) start.o test3.o -o test3.coff
+	../bin/coff2noff test3.coff test3
+
+test3_1.o: test3_1.c
+	$(CC) $(CFLAGS) -c test3_1.c
+test3_1: test3_1.o start.o
+	$(LD) $(LDFLAGS) start.o test3_1.o -o test3_1.coff
+	../bin/coff2noff test3_1.coff test3_1
+
+test3_2.o: test3_2.c
+	$(CC) $(CFLAGS) -c test3_2.c
+test3_2: test3_2.o start.o
+	$(LD) $(LDFLAGS) start.o test3_2.o -o test3_2.coff
+	../bin/coff2noff test3_2.coff test3_2
 

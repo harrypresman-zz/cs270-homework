@@ -92,13 +92,13 @@ void putString( char* str, int vAddr ){
     strcpy( machine->mainMemory + pAddr, str );
 }
 
-void getMem( char* buffer, int vAddr, int size ){
+void getMemFromVAddr( char* buffer, int vAddr, int size ){
     int pAddr;
     currentThread->space->Translate( vAddr, &pAddr ); 
     memcpy( buffer, machine->mainMemory + pAddr, size );
 }
 
-void putMem( char* buffer, int vAddr, int size ){
+void putMemIntoVAddr( char* buffer, int vAddr, int size ){
     int pAddr;
     currentThread->space->Translate( vAddr, &pAddr ); 
     memcpy( machine->mainMemory + pAddr, buffer, size ); 
@@ -108,28 +108,29 @@ void myExit(int exitStatus){
     printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
-    procMgr->setExitStatus(currentThread->space->pcb->PID, exitStatus);
+    procMgr->setExitStatus( currentThread->space->pcb->PID, exitStatus );
     delete currentThread->space;
     currentThread->Finish();
 
-    machine->WriteRegister(2, exitStatus);
+    machine->WriteRegister( 2, exitStatus );
 }
 
 void myExec( int vAddr ){
     char* file = getString( vAddr );
-
     OpenFile* executable = fileSystem->Open( file );
 
     if( executable == NULL ){
         printf( "Unable to open file %s\n", file );
         return;
     }
+
     Thread* forkedThread;
     forkedThread = new Thread( "Exec Thread" );
     AddrSpace* space = new AddrSpace( executable );
-    forkedThread->space = space;
+    forkedThread->space = space;    
+    // something is going wrong, space is getting the address 0x100 for some reason!!
 
-    forkedThread->space->pcb->parentPID =  currentThread->space->pcb->PID;
+    forkedThread->space->pcb->parentPID = currentThread->space->pcb->PID;
     forkedThread->space->pcb->thread = forkedThread;
     delete file;
     delete executable;			// close file
@@ -140,7 +141,7 @@ void myExec( int vAddr ){
             currentThread->space->pcb->parentPID );
     currentThread->Yield();
 
-    machine->WriteRegister(2, forkedThread->space->pcb->PID);
+    machine->WriteRegister( 2, forkedThread->space->pcb->PID );
 }
 
 void execBridge( int newPC ){
@@ -150,8 +151,9 @@ void execBridge( int newPC ){
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
     // the address space exits
-    // by doing the syscall "exit"printf( "EXEC, initiated
-    // by user program %s.\n", currentThread->getName() );
+    // by doing the syscall "exit"
+    // printf( "EXEC, initiated by user program %s.\n", 
+    // currentThread->getName() );
 }
 
 void myFork( int newPC ){
@@ -220,65 +222,62 @@ void myClose( int fd ){
     procMgr->closeFile( fd );
 }
 
-//LEFTOFF 
 int myRead( int vAddr, int size, OpenFileId fd ){
 //    printf( "READ, initiated by user program %s.\n", 
 //            currentThread->getName() );
+
+    //TODO: It is unclear whether we should collect chars in a loop here, 
+    // or get one char at a time.
     if( fd == ConsoleInput ){
         diskBuffer[0] = getchar(); 
-        putMem( diskBuffer, vAddr, 1 );
+        putMemIntoVAddr( diskBuffer, vAddr, 1 );
         machine->WriteRegister( 2, 1 );
     }else{
-        // LEFT OFF
         UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
         int pos = file->position;
         int numRead = 0;
         int totNumRead = 0;
-        if( size > PageSize ){
-            int numPages = size/PageSize;
-            while( size > 0 ){
-                int pSize = (size > PageSize) ? PageSize : size % PageSize;
-                numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, pSize, pos );
-                totNumRead += numRead;
-                char buffer[numRead];
-                memcpy( buffer, diskBuffer, numRead );
-                putMem( buffer, vAddr, numRead );
-                pos += pSize;
-                size -= pSize;
-                vAddr += pSize;
-            }
-            numRead = totNumRead;
-            file->position = pos;
-        }else{
-            int numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, size, pos );
-            char buffer[numRead + 1];
-            memcpy( buffer, diskBuffer, numRead );
-            buffer[numRead] = '\0';
-            putString( buffer, vAddr );
-            file->position += size;
-            //        printf( "Num read = %d\n", numRead );
+        while( size > 0 ){
+            int pSize = (size > PageSize) ? PageSize : size;
+            numRead = file->sysOpenFile->openFile->ReadAt( diskBuffer, pSize, pos );
+            totNumRead += numRead;
+            putMemIntoVAddr( diskBuffer, vAddr, numRead );
+            pos += pSize;
+            size -= pSize;
+            vAddr += pSize;
         }
+        //TODO: do we need this?
+        char zero[1];
+        zero[0] = '\0';
+        putMemIntoVAddr( zero, vAddr, 1 );
+        numRead = totNumRead;
+        file->position = pos;
+
         machine->WriteRegister( 2, numRead );
     }
     return 0;
 }
 
-//LEFTOFF
-int myWrite( int vAddr, int size, OpenFileId fd ){
+void myWrite( int vAddr, int size, OpenFileId fd ){
 //    printf( "WRITE, initiated by user program %s.\n", 
 //            currentThread->getName() );
-    char* buffer = getString( vAddr );
-    // ConsoleOutput is not assigned yet
     if( fd == ConsoleOutput ){
+        char* buffer = getString( vAddr );
         printf( "%s", buffer );
     }else{
-        // TODO
         UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
         int pos = file->position;
-        file->sysOpenFile->openFile->WriteAt( buffer, size, pos );
-        file->position += size;
+        int numRead = 0;
+        while( size > 0 ){
+            int pSize = (size > PageSize) ? PageSize : size;
+            getMemFromVAddr( diskBuffer, vAddr, pSize );
+            numRead = file->sysOpenFile->openFile->WriteAt( diskBuffer, pSize, pos );
+            pos += pSize;
+            size -= pSize;
+            vAddr += pSize;
+        }
+        file->position = pos;
     }
-    return 0;
 }
 
 //LEFTOFF not tested not right
@@ -317,7 +316,7 @@ void ExceptionHandler( ExceptionType which ){
     int arg1 = machine->ReadRegister( 4 );
     int arg2 = machine->ReadRegister( 5 );
     int arg3 = machine->ReadRegister( 6 );
-    int arg4 = machine->ReadRegister( 7 );
+    int arg4 = machine->ReadRegister( 7 ); // never used
 
     if( (which == SyscallException) && (type == SC_Halt) ){
         printf( "Shutdown, initiated by user program %s.\n", 
@@ -329,7 +328,7 @@ void ExceptionHandler( ExceptionType which ){
         myExec( arg1 );
     }else if( (which == SyscallException) && (type == SC_Join) ){
         printf( "JOIN, initiated by user program %s. Waiting on pid:%d \n", 
-                currentThread->getName(), machine->ReadRegister(4) );
+                currentThread->getName(), arg1 );
         procMgr->join( arg1 );
     }else if( (which == SyscallException) && (type == SC_Create) ){
         myCreate( arg1 );
@@ -338,8 +337,6 @@ void ExceptionHandler( ExceptionType which ){
     }else if( (which == SyscallException) && (type == SC_Read) ){
         myRead( arg1, arg2, arg3 );
     }else if( (which == SyscallException) && (type == SC_Write) ){
-        //LEFTOFF convert arg1 into a char*? 
-        //Is this where we should utilize the helper function?
         myWrite( arg1, arg2, arg3 );
     }else if( (which == SyscallException) && (type == SC_Close) ){
         myClose( arg1 );

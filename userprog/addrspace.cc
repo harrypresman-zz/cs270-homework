@@ -195,7 +195,7 @@ void AddrSpace::InitRegisters(){
 }
 
 bool AddrSpace::Translate(int virtAddr, int* physAddr){
-    if(physAddr == NULL) return false;
+    if( physAddr == NULL ) return false;
 
     int vPageNum = virtAddr/PageSize;
     int offset = virtAddr % PageSize;
