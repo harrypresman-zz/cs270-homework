@@ -79,7 +79,7 @@ char* getString( int vAddr ){
     // get the mem addr from register that holds exec name as string
     currentThread->space->Translate( vAddr, &pAddr ); 
 
-    char* str = new char[ strlen( machine->mainMemory + pAddr ) ]; // create
+    char* str = new char[ strlen( machine->mainMemory + pAddr )+1 ]; // create
     strcpy( str, machine->mainMemory + pAddr ); // we need a char* from mem
 
     return str;
