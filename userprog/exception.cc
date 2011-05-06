@@ -105,6 +105,7 @@ void putMemIntoVAddr( char* buffer, int vAddr, int size ){
 }
 
 void myExit(int exitStatus){
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
     printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
@@ -113,9 +114,11 @@ void myExit(int exitStatus){
     currentThread->Finish();
 
     machine->WriteRegister( 2, exitStatus );
+    interrupt->SetLevel(oldLevel);
 }
 
 void myExec( int vAddr ){
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
     char* file = getString( vAddr );
     OpenFile* executable = fileSystem->Open( file );
 
@@ -127,8 +130,10 @@ void myExec( int vAddr ){
     Thread* forkedThread;
     forkedThread = new Thread( "Exec Thread" );
     AddrSpace* space = new AddrSpace( executable );
-    forkedThread->space = space;    
-    // something is going wrong, space is getting the address 0x100 for some reason!!
+    forkedThread->space = space;   
+    // in test3.c -- exec on test3_1
+    // something is going wrong, space is getting the address 0x100 
+    // after the Yield for some reason!!
 
     forkedThread->space->pcb->parentPID = currentThread->space->pcb->PID;
     forkedThread->space->pcb->thread = forkedThread;
@@ -139,9 +144,10 @@ void myExec( int vAddr ){
     printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
-    currentThread->Yield();
 
     machine->WriteRegister( 2, forkedThread->space->pcb->PID );
+    currentThread->Yield();
+    interrupt->SetLevel(oldLevel);
 }
 
 void execBridge( int newPC ){
@@ -157,6 +163,7 @@ void execBridge( int newPC ){
 }
 
 void myFork( int newPC ){
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
     // fork kernel thread
     Thread * forkedThread = new Thread("ForkedThread");
     forkedThread->space = new AddrSpace;
@@ -172,6 +179,7 @@ void myFork( int newPC ){
     currentThread->Yield();
     printf("returned from fork\n");
     machine->WriteRegister(2, newPID);
+    interrupt->SetLevel(oldLevel);
 }
 
 void forkBridge( int newPC ){
@@ -229,8 +237,10 @@ int myRead( int vAddr, int size, OpenFileId fd ){
     //TODO: It is unclear whether we should collect chars in a loop here, 
     // or get one char at a time.
     if( fd == ConsoleInput ){
-        diskBuffer[0] = getchar(); 
-        putMemIntoVAddr( diskBuffer, vAddr, 1 );
+        for( int i = 0; i < size; i++ ){
+            diskBuffer[i] = getchar(); 
+        }
+        putMemIntoVAddr( diskBuffer, vAddr, size );
         machine->WriteRegister( 2, 1 );
     }else{
         UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );

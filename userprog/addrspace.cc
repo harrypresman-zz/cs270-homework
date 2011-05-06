@@ -93,6 +93,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
         ASSERT( pageNum >= 0 );
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = pageNum;
+        printf( "virtual page %d -> physical page %d\n", i, pageNum );
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -130,8 +131,10 @@ AddrSpace::AddrSpace(OpenFile *executable){
 //----------------------------------------------------------------------
 
 AddrSpace::~AddrSpace(){
-    for( int i = 0; i < numPages; i++ )
+    for( int i = 0; i < numPages; i++ ){
+        printf( "Clearing page %d\n", pageTable[i].physicalPage );
         memMgr->clearPage( pageTable[i].physicalPage );
+    }
     delete pageTable;
     delete pcb;
 }
@@ -155,6 +158,7 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
                 machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), 
                 PageSize );
+        printf( "virtual page %d -> physical page %d\n", i, pageNum );
         spaceDest->pageTable[i].valid = TRUE;
         spaceDest->pageTable[i].use = FALSE;
         spaceDest->pageTable[i].dirty = FALSE;
