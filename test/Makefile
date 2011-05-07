@@ -39,7 +39,8 @@ CFLAGS = -G 0 -c $(INCDIR)
 
 all: shell matmult sort halt halt2 cat cp mix_test mix_test1 mix_test2 ncat org\
 	test1 ncp ncp2 test2 test3 test3_1 test3_2 test4 test4_1 test4_2 test5 \
-	test5_2 test5_1 time_exec_nachos time_exec_in_nachos time_exec time_exec_in
+	test5_2 test5_1 time_exec_nachos time_exec_in_nachos time_exec \
+	time_no_join_nachos time_fork_nachos
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -208,9 +209,15 @@ time_exec_in_nachos: time_exec_in_nachos.o start.o
 	$(LD) $(LDFLAGS) start.o time_exec_in_nachos.o -o time_exec_in.coff
 	../bin/coff2noff time_exec_in.coff time_exec_in_nachos
 
-time_exec: time_exec.c
-	g++ time_exec.c -o time_exec
+time_no_join_nachos.o: time_no_join_nachos.c
+	$(CC) $(CFLAGS) -c time_no_join_nachos.c
+time_no_join_nachos: time_no_join_nachos.o start.o
+	$(LD) $(LDFLAGS) start.o time_no_join_nachos.o -o time_no_join.coff
+	../bin/coff2noff time_no_join.coff time_no_join_nachos
 
-time_exec_in: time_exec_in.c
-	g++ time_exec_in.c -o time_exec_in
+time_fork_nachos.o: time_fork_nachos.c
+	$(CC) $(CFLAGS) -c time_fork_nachos.c
+time_fork_nachos: time_fork_nachos.o start.o
+	$(LD) $(LDFLAGS) start.o time_fork_nachos.o -o time_fork.coff
+	../bin/coff2noff time_fork.coff time_fork_nachos
 
