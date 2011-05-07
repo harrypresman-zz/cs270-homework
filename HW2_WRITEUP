@@ -1,0 +1,35 @@
+Aaron Elmore and Harry Presman
+
+Office Hours that we can both attend is Friday 3-4 (except 5/13). Can schedule times outside of office hours.
+CS270 HW 2 submission
+
+Run:
+./hw2.sh [absDir] halt test1 test2 test3 test4 test5 
+_NOTE_ test2 will ask for 2 chars to be entered from console
+_NOTE_ test4 will ask for 5 chars to be entered from console
+_NOTE_ test5 will fail due to not enough memory.
+(requires that test scripts are executed from userprog as in hw2.sh)
+
+
+
+Tasks :
+Fork() - Completed no issues. Create new thread, copy addrSpace, and move PC to argument1.
+Yield() - Completed no issues. Called thread->yield().
+Exit() - Completed no issues. Set the exit code via procMgr, clean up pages in procMgr, and wrote result to registers. Broadcasts to condition.
+Exec() - Completed no issues. Initialize addrSpace, copy file into memory, forks to a bridge function with the new PC (0).
+Join() - Completed no issues. Use condition to block on a given PID.
+Create() - Completed no issues. Get filename and call filesystem create
+Open() - Completed no issues.  Opens a file and registers file as a singleton openSysFile (on a fixed array with a index as FD) and PCB userOpenFile. Return FD
+Read() - Completed no issues. Copies from file into diskBuffer into memory. Translation occurs. Checks for user console input of given size.
+Write() - Completed no issues. Inverse of Read.
+Close() - Completed no issues. Remove from openSysFile and PCB userOpenFile. Clean.
+Added the required outputs that will show when call with -d 2  (DEBUG level '2').
+
+Files modified:
+Makefile.common
+userprog/ addrSpace(h/cc) processManager (h/cc) memoryManager (h/cc) sysOpenFile(h/cc) pcb (h/cc)  useOpenFile (h/cc) 
+
+threads/ system(h/cc)
+
+test/ halt test1 - test5 Makefile
+
