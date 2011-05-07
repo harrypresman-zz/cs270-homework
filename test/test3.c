@@ -8,9 +8,9 @@ int main()
 {
   int i;
 
-  for( i=0 ; i < 5 ; ++i ) Exec( "test/test3_1" );
+  for( i=0 ; i < 5 ; ++i ) Exec( "../test/test3_1" );
  
-  for( i=0 ; i < 5 ; ++i ) Join( Exec( "test/test3_2" ) );
+  for( i=0 ; i < 5 ; ++i ) Join( Exec( "../test/test3_2" ) );
   
   Halt(0);
 }

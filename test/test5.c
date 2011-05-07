@@ -6,7 +6,7 @@
 
 void test5_1 () {
 	Write( "Test5 Fork(): This is test 5 after fork before Exec\n", 52, ConsoleOutput );
-	Exec( "test/test5_1" );
+	Exec( "../test/test5_1" );
 }
 
 int main()
@@ -17,7 +17,7 @@ int main()
   	Fork( test5_1);
   	Yield();
   }
-  for( i=0 ; i < 2 ; ++i ) Exec( "test/test5_2" );
+  for( i=0 ; i < 2 ; ++i ) Exec( "../test/test5_2" );
   
   Halt(0);
 }
