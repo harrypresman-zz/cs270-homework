@@ -24,7 +24,7 @@ int main()
   
   Close( f0 );
   
-  Join( Exec( "test/test4_1" ) );
+  Join( Exec( "../test/test4_1" ) );
   
   Halt(0);
 }
