@@ -38,7 +38,8 @@ INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
 all: shell matmult sort halt halt2 cat cp mix_test mix_test1 mix_test2 ncat org\
-	test1 ncp ncp2 test2 test3 test3_1 test3_2 test4 test4_1 test4_2 test5 test5_2 test5_1
+	test1 ncp ncp2 test2 test3 test3_1 test3_2 test4 test4_1 test4_2 test5 \
+	test5_2 test5_1 time_exec_nachos time_exec_in_nachos time_exec
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -195,4 +196,18 @@ test5_2: test5_2.o start.o
 	$(LD) $(LDFLAGS) start.o test5_2.o -o test5_2.coff
 	../bin/coff2noff test5_2.coff test5_2
 
+time_exec_nachos.o: time_exec_nachos.c
+	$(CC) $(CFLAGS) -c time_exec_nachos.c
+time_exec_nachos: time_exec_nachos.o start.o
+	$(LD) $(LDFLAGS) start.o time_exec_nachos.o -o time_exec.coff
+	../bin/coff2noff time_exec.coff time_exec
+
+time_exec_in_nachos.o: time_exec_in_nachos.c
+	$(CC) $(CFLAGS) -c time_exec_in_nachos.c
+time_exec_in_nachos: time_exec_in_nachos.o start.o
+	$(LD) $(LDFLAGS) start.o time_exec_in_nachos.o -o time_exec_in.coff
+	../bin/coff2noff time_exec_in.coff time_exec_in
+
+time_exec: time_exec.c
+	g++ time_exec.c -o time_exec
 
