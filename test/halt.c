@@ -23,9 +23,13 @@ int main(){
     int pid, fd1, fd2, fd3;
     char* buf = "banana";
     int size = 7;
+    int i;
 
     // test fork, exec, join, yield
-/*
+    for( i = 0; i < 3; i++ ){
+        Exec( "test/halt2" );
+    }
+    /*
     Fork( testFunc );
     Exec( "test/halt2" );
     pid = Exec( "test/halt2" );
@@ -33,6 +37,7 @@ int main(){
     Yield();
 */
     // test create, open, write, read, close
+    /*
     Create( "apple" );
     Create( "orange" );
     Create( "mango" );
@@ -51,7 +56,8 @@ int main(){
     fd1 = Open( "mango" );
     Write( buf, size, fd1 );
     Close( fd1 );
+    */
 
-    Halt();
+//    Halt();
     /* not reached */
 }
