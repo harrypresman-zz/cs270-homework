@@ -16,12 +16,19 @@ ProcessManager::ProcessManager(){
     fsLock = new Lock*[SYS_MAX_OPEN_FILES];
     bitLock = new Lock("bitLock");
 
+    //init fs locks
+    for(int i = 0 ; i< SYS_MAX_OPEN_FILES; i++){
+      fsLock[i]= new Lock("fsLock");
+    }
+    
     sysOpenFileTable = new SysOpenFile*[SYS_MAX_OPEN_FILES];
     sysOpenFileMap = new BitMap(SYS_MAX_OPEN_FILES);
 
     // if we reserve these, we have to instantiate them...
     sysOpenFileMap->Mark( CIN );
     sysOpenFileMap->Mark( COUT );
+    
+    
 }
 
 ProcessManager::~ProcessManager(){
@@ -72,7 +79,7 @@ int ProcessManager::join( int pid ) {
 }
 
 void ProcessManager::setExitStatus( int pid, int exitStatus ){
-    printf("Setting exit status %d for pid %d\n",exitStatus,pid);
+    DEBUG('t',"Setting exit status %d for pid %d\n",exitStatus,pid);
     returnStatus[pid] = exitStatus;
 }
 
@@ -110,18 +117,22 @@ SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileNam
 }
 
 void ProcessManager::closeFile( int fd ){
-    // TODO: instantiate a lock if we want to use it
-//    fsLock[fd]->Acquire();
+    fsLock[fd]->Acquire();
+    if(sysOpenFileTable==NULL || sysOpenFileTable[fd]==NULL){
+      printf("Null pointer\n");
+      return;
+    }
     sysOpenFileTable[fd]->numUsers--;
+    
     if( sysOpenFileTable[fd]->numUsers == 0 ){
-        // TODO: do we want to leave the file, or delete it?
+	// TODO: do we want to leave the file, or delete it?
         //fileSystem->Remove( sysOpenFileTable[fd]->fileName );
         //delete sysOpenFileTable[fd]->openFile;
         delete sysOpenFileTable[fd];
-        sysOpenFileTable[fd] = NULL;
-        sysOpenFileMap->Clear(fd);
+	sysOpenFileTable[fd] = NULL;
+        sysOpenFileMap->Clear(fd);    
     }
-//    fsLock[fd]->Release();
+    fsLock[fd]->Release();
 }
 
 int ProcessManager::getFD( char* name ){

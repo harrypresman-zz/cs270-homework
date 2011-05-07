@@ -106,10 +106,13 @@ void putMemIntoVAddr( char* buffer, int vAddr, int size ){
 
 void myExit(int exitStatus){
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    printf( "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
+    DEBUG('t', "EXIT, initiated by user program %s pid:%d parentPID:%d.\n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
+    int pid = currentThread->space->pcb->PID;
     procMgr->setExitStatus( currentThread->space->pcb->PID, exitStatus );
+    
+    DEBUG('2', "Process %d exits with %d\n", pid , exitStatus); //TODO this is the parent PID #4
     delete currentThread->space;
     currentThread->Finish();
 
@@ -123,10 +126,9 @@ void myExec( int vAddr ){
     OpenFile* executable = fileSystem->Open( file );
 
     if( executable == NULL ){
-        printf( "Unable to open file %s\n", file );
+        DEBUG('t', "Unable to open file %s\n", file );
         return;
     }
-
     Thread* forkedThread;
     forkedThread = new Thread( "Exec Thread" );
     AddrSpace* space = new AddrSpace( executable );
@@ -141,10 +143,11 @@ void myExec( int vAddr ){
     delete executable;			// close file
 
     forkedThread->Fork( execBridge, 0 );
-    printf( "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", 
+    DEBUG('t', "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
-
+    DEBUG('2', "Exec Program: %d loading %s\n", forkedThread->space->pcb->PID , file); //TODO is this the right PID?
+    
     machine->WriteRegister( 2, forkedThread->space->pcb->PID );
     currentThread->Yield();
     interrupt->SetLevel(oldLevel);
@@ -172,12 +175,12 @@ void myFork( int newPC ){
     forkedThread->space->pcb = new PCB(newPID, currentThread->space->pcb->PID,
             forkedThread);
     procMgr->storePCB( forkedThread->space->pcb );
-    printf( "FORK, initiated by user program %s. pid:%d parentPID:%d \n", 
+    DEBUG('t', "FORK, initiated by user program %s. pid:%d parentPID:%d \n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
     forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
-    printf("returned from fork\n");
+    DEBUG('t',"returned from fork\n");
     machine->WriteRegister(2, newPID);
     interrupt->SetLevel(oldLevel);
 }
@@ -186,7 +189,7 @@ void forkBridge( int newPC ){
     currentThread->space->InitRegisters();
     currentThread->space->RestoreState();
 
-    printf( "FORK, forked thread %s.\n", currentThread->getName() );
+    DEBUG('t', "FORK, forked thread %s.\n", currentThread->getName() );
     jumpPC(newPC);
 
     machine->Run();
@@ -197,7 +200,7 @@ void forkBridge( int newPC ){
  */
 
 void myCreate( int vAddr ){
-    printf( "CREATE, initiated by user program %s.\n", 
+    DEBUG('t',"CREATE, initiated by user program %s.\n", 
             currentThread->getName() );
     char* fileName = getString( vAddr );
     fileSystem->Create( fileName, 0 );
@@ -219,27 +222,32 @@ void myOpen( int vAddr ){
     UserOpenFile* userOpenFile = currentThread->space->pcb->getOpenFile( fileName, sysOpenFile );
 
     machine->WriteRegister( 2, sysOpenFile->fd );
-    printf( "OPEN %s, initiated by user program %s, assigned FD %d.\n", 
+    DEBUG('t', "OPEN %s, initiated by user program %s, assigned FD %d.\n", 
             fileName, currentThread->getName(), userOpenFile->fd );
 }
 
 void myClose( int fd ){
-    printf( "CLOSE FD %d, initiated by user program %s.\n",
+    DEBUG('t', "CLOSE FD %d, initiated by user program %s.\n",
             fd, currentThread->getName() );
     currentThread->space->pcb->closeFile( fd );
     procMgr->closeFile( fd );
 }
 
 int myRead( int vAddr, int size, OpenFileId fd ){
-//    printf( "READ, initiated by user program %s.\n", 
+//    DEBUG('t', "READ, initiated by user program %s.\n", 
 //            currentThread->getName() );
 
-    //TODO: It is unclear whether we should collect chars in a loop here, 
-    // or get one char at a time.
+
     if( fd == ConsoleInput ){
         for( int i = 0; i < size; i++ ){
             diskBuffer[i] = getchar(); 
         }
+	//Sample trimmed excess end line chars. is this needed?  
+	//char next = 'a';
+	// Get rid of excess characters
+	//while ((next != '\n')&&(next != EOF)) {
+	//	  next = getchar();
+	// }
         putMemIntoVAddr( diskBuffer, vAddr, size );
         machine->WriteRegister( 2, 1 );
     }else{
@@ -273,7 +281,7 @@ void myWrite( int vAddr, int size, OpenFileId fd ){
 //            currentThread->getName() );
     if( fd == ConsoleOutput ){
         char* buffer = getString( vAddr );
-        printf( "%s", buffer );
+        printf("%s", buffer );
     }else{
         UserOpenFile* file = currentThread->space->pcb->getOpenFile( fd );
         int pos = file->position;
@@ -290,35 +298,7 @@ void myWrite( int vAddr, int size, OpenFileId fd ){
     }
 }
 
-//LEFTOFF not tested not right
-int userReadWrite( int vAddr, OpenFile* file, int size, int fileAddr, int opType ){
-    //TODO helper
-    int copySize = PageSize; // diskBuffer size
-    while( size > 0 ){
-        int pAddr;
 
-        if( size < PageSize ) copySize = size;
-
-        // do we have an openfile at this point? 
-        file->ReadAt( diskBuffer, copySize, fileAddr );
-
-        // translate should return the offset in bytes from mainMemory
-        bool successful = currentThread->space->Translate( vAddr, &pAddr );
-
-        if( ! successful ) return -1;
-
-        if( opType == READ_OP ){
-            bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
-        }else if( opType == WRITE_OP ){ //TODO this is wrong, but think this is the idea of helper	    
-            bcopy( machine->mainMemory + pAddr,  diskBuffer, copySize );
-        }
-        size -= PageSize;
-        vAddr += copySize;
-        fileAddr += copySize;
-    }
-    return 1;
-    return 0;
-}
 
 void ExceptionHandler( ExceptionType which ){
     int type = machine->ReadRegister( 2 );
@@ -327,38 +307,50 @@ void ExceptionHandler( ExceptionType which ){
     int arg2 = machine->ReadRegister( 5 );
     int arg3 = machine->ReadRegister( 6 );
     int arg4 = machine->ReadRegister( 7 ); // never used
-
+    int pid = currentThread->space->pcb->PID;
     if( (which == SyscallException) && (type == SC_Halt) ){
-        printf( "Shutdown, initiated by user program %s.\n", 
+	DEBUG('2',"System Call: %d invoked Halt\n", pid);
+        DEBUG('t', "Shutdown, initiated by user program %s.\n", 
                 currentThread->getName() );
         interrupt->Halt();
     }else if( (which == SyscallException) && (type == SC_Exit) ){
+        DEBUG('2',"System Call: %d invoked Exit\n", pid);        
         myExit( arg1 );
     }else if( (which == SyscallException) && (type == SC_Exec) ){
+	DEBUG('2',"System Call: %d invoked Exec\n", pid);        
         myExec( arg1 );
     }else if( (which == SyscallException) && (type == SC_Join) ){
-        printf( "JOIN, initiated by user program %s. Waiting on pid:%d \n", 
+        DEBUG('2',"System Call: %d invoked Join\n", pid);        
+	DEBUG('t', "JOIN, initiated by user program %s. Waiting on pid:%d \n", 
                 currentThread->getName(), arg1 );
         procMgr->join( arg1 );
     }else if( (which == SyscallException) && (type == SC_Create) ){
+	DEBUG('2',"System Call: %d invoked Create\n", pid);        
         myCreate( arg1 );
     }else if( (which == SyscallException) && (type == SC_Open) ){
+	DEBUG('2',"System Call: %d invoked Open\n", pid);        
         myOpen( arg1 );
     }else if( (which == SyscallException) && (type == SC_Read) ){
+        DEBUG('2',"System Call: %d invoked Read\n", pid);
         myRead( arg1, arg2, arg3 );
     }else if( (which == SyscallException) && (type == SC_Write) ){
-        myWrite( arg1, arg2, arg3 );
+        DEBUG('2',"System Call: %d invoked Write\n", pid);        
+	myWrite( arg1, arg2, arg3 );
     }else if( (which == SyscallException) && (type == SC_Close) ){
+        DEBUG('2',"System Call: %d invoked Close\n", pid);
         myClose( arg1 );
     }else if( (which == SyscallException) && (type == SC_Fork) ){
+        DEBUG('2',"System Call: %d invoked Fork\n", pid);
         myFork( arg1 );
     }else if( (which == SyscallException) && (type == SC_Yield) ){
-        printf( "YIELD, initiated by user program. %s myPID: %d parentPID:%d \n", 
+        DEBUG('2',"System Call: %d invoked Yield\n", pid);
+        DEBUG('t', "YIELD, initiated by user program. %s myPID: %d parentPID:%d \n", 
                 currentThread->getName(), currentThread->space->pcb->PID, 
                 currentThread->space->pcb->parentPID );
         currentThread->Yield();
     }else{
-        printf("Unexpected user mode exception %d %d\n", which, type);
+	DEBUG('2',"System Call: %d unexcepected user mode exception %d %d\n", pid, which, type);        
+        DEBUG('t',"Unexpected user mode exception %d %d\n", which, type);
         ASSERT( FALSE );
     }
     incrementPC();
