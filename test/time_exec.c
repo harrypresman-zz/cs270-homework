@@ -1,10 +1,8 @@
 #include <unistd.h>
 #include <limits.h>
-#include <stdio.h>
 #include <sys/wait.h>
 
 int main(){
-    printf("%d\n", INT_MAX );
     for( int i = 0; i < 10; i += 2 ){
         i--;
         int pid = fork();
