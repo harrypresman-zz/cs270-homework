@@ -119,7 +119,9 @@ SysOpenFile* ProcessManager::createNewSysFile( OpenFile* openFile, char* fileNam
 void ProcessManager::closeFile( int fd ){
     fsLock[fd]->Acquire();
     if(sysOpenFileTable==NULL || sysOpenFileTable[fd]==NULL){
-      printf("Null pointer\n");
+      //TODO this is happening still....
+      DEBUG('t',"Null pointer\n");
+      
       return;
     }
     sysOpenFileTable[fd]->numUsers--;

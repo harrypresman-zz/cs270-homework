@@ -78,7 +78,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
     // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
-
+    if (numPages > memMgr->getFreePageCount()) printf("Unable to allocate a page\n");
     ASSERT(numPages <= memMgr->getFreePageCount());		// check we're not trying
     // to run anything too big --
     // at least until we have
@@ -154,7 +154,9 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
     // we need to duplicate all the pages into the new addrSpace
     for (int i = 0; i < numPages; i++) {
         int pageNum = memMgr->getPage();
-        ASSERT( pageNum >= 0 );
+	if (pageNum < 0)
+	  printf("Unable to allocate a page\n");
+        ASSERT( pageNum>= 0 );
         spaceDest->pageTable[i].virtualPage = i;
         spaceDest->pageTable[i].physicalPage = pageNum;
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 

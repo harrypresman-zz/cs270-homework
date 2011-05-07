@@ -112,7 +112,7 @@ void myExit(int exitStatus){
     int pid = currentThread->space->pcb->PID;
     procMgr->setExitStatus( currentThread->space->pcb->PID, exitStatus );
     
-    DEBUG('2', "Process %d exits with %d\n", pid , exitStatus); //TODO this is the parent PID #4
+    DEBUG('2', "Process %d exits with %d\n", pid , exitStatus); 
     delete currentThread->space;
     currentThread->Finish();
 
@@ -124,7 +124,7 @@ void myExec( int vAddr ){
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
     char* file = getString( vAddr );
     OpenFile* executable = fileSystem->Open( file );
-
+    
     if( executable == NULL ){
         DEBUG('t', "Unable to open file %s\n", file );
         return;
@@ -133,20 +133,20 @@ void myExec( int vAddr ){
     forkedThread = new Thread( "Exec Thread" );
     AddrSpace* space = new AddrSpace( executable );
     forkedThread->space = space;   
-    // in test3.c -- exec on test3_1
-    // something is going wrong, space is getting the address 0x100 
-    // after the Yield for some reason!!
+
 
     forkedThread->space->pcb->parentPID = currentThread->space->pcb->PID;
     forkedThread->space->pcb->thread = forkedThread;
+    DEBUG('2', "Exec Program: %d loading %s\n", currentThread->space->pcb->PID , file); //TODO is this the right PID?
+
     delete file;
     delete executable;			// close file
 
+    
     forkedThread->Fork( execBridge, 0 );
     DEBUG('t', "EXEC, initiated by user program. %s myPID: %d parentPID:%d \n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
-    DEBUG('2', "Exec Program: %d loading %s\n", forkedThread->space->pcb->PID , file); //TODO is this the right PID?
     
     machine->WriteRegister( 2, forkedThread->space->pcb->PID );
     currentThread->Yield();
@@ -178,9 +178,11 @@ void myFork( int newPC ){
     DEBUG('t', "FORK, initiated by user program %s. pid:%d parentPID:%d \n", 
             currentThread->getName(), currentThread->space->pcb->PID, 
             currentThread->space->pcb->parentPID );
+    DEBUG('2', "Process %d  Fork: start at address 0x%x with %d pages memory\n", currentThread->space->pcb->PID,  newPC, forkedThread->space->numPages);
     forkedThread->Fork( forkBridge, newPC );
     currentThread->Yield();
     DEBUG('t',"returned from fork\n");
+    
     machine->WriteRegister(2, newPID);
     interrupt->SetLevel(oldLevel);
 }
@@ -242,12 +244,7 @@ int myRead( int vAddr, int size, OpenFileId fd ){
         for( int i = 0; i < size; i++ ){
             diskBuffer[i] = getchar(); 
         }
-	//Sample trimmed excess end line chars. is this needed?  
-	//char next = 'a';
-	// Get rid of excess characters
-	//while ((next != '\n')&&(next != EOF)) {
-	//	  next = getchar();
-	// }
+
         putMemIntoVAddr( diskBuffer, vAddr, size );
         machine->WriteRegister( 2, 1 );
     }else{
