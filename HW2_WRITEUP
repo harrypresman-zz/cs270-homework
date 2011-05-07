@@ -1,18 +1,20 @@
 Aaron Elmore and Harry Presman
-
+===============================
 Office Hours that we can both attend is Friday 3-4 (except 5/13). Can schedule times outside of office hours.
 CS270 HW 2 submission
 
 Run:
+=============================
 ./hw2.sh [absDir] halt test1 test2 test3 test4 test5 
 _NOTE_ test2 will ask for 2 chars to be entered from console
 _NOTE_ test4 will ask for 5 chars to be entered from console
-_NOTE_ test5 will fail due to not enough memory.
+_NOTE_ test5 will fail/ abort due to not enough memory.
+
 (requires that test scripts are executed from userprog as in hw2.sh)
 
 
-
 Tasks :
+===========================
 Fork() - Completed no issues. Create new thread, copy addrSpace, and move PC to argument1.
 Yield() - Completed no issues. Called thread->yield().
 Exit() - Completed no issues. Set the exit code via procMgr, clean up pages in procMgr, and wrote result to registers. Broadcasts to condition.
@@ -26,10 +28,29 @@ Close() - Completed no issues. Remove from openSysFile and PCB userOpenFile. Cle
 Added the required outputs that will show when call with -d 2  (DEBUG level '2').
 
 Files modified:
+==============================
 Makefile.common
+
 userprog/ addrSpace(h/cc) processManager (h/cc) memoryManager (h/cc) sysOpenFile(h/cc) pcb (h/cc)  useOpenFile (h/cc) 
 
 threads/ system(h/cc)
 
-test/ halt test1 - test5 Makefile
+test/ halt test* time* Makefile
+
+
+Timing
+===============================
+Compared like operations between Nachos and Ubuntu Linux using shell's time function.
+
+Time Create (Linux) ~ 0.001s
+Time Create (Nachos) ~ 0.003s
+Time Open (Linux) ~ 0.002s
+Time Open (Nachos) ~ 0.003s
+
+Time Exec (fork and waitpid to sim join) (Linux) ~ 1.1s  --needed to have a fork to match nachos style and to spawn multiple instances, linux exec overwrites current process (addrSpace)
+Time Exec (and join) (Nachos) ~  1s
+Time Exec (no join) (Linux) ~0.005s
+Time Exec (no join) (Nachos) ~0.007s
+Time Fork (Linux) ~0.005s
+Time Fork (Nachos) ~0.006s
 
