@@ -54,4 +54,9 @@ extern SynchDisk   *synchDisk;
 extern PostOffice* postOffice;
 #endif
 
+#ifdef VM
+#include "vmManager.h"
+extern VMManager* vmMgr;
+#endif
+
 #endif // SYSTEM_H

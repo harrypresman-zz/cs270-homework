@@ -2,7 +2,7 @@
 #include "bitmap.h"
 
 MemoryManager::MemoryManager(){
-    bitmap = new BitMap(NumTotPages);
+    bitmap = new BitMap( NumTotPages );
 }
 
 MemoryManager::~MemoryManager(){
@@ -13,7 +13,7 @@ int MemoryManager::getPage(){
     return bitmap->Find();
 }
 
-void MemoryManager::clearPage(int i){
+void MemoryManager::clearPage( int i ){
     bitmap->Clear(i);
 }
     

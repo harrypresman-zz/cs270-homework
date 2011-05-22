@@ -37,7 +37,8 @@ AS = as --32
 
 PROGRAM = nachos
 
-THREAD_H =../threads/copyright.h\
+THREAD_H = \
+	../threads/copyright.h\
 	../threads/list.h\
 	../threads/scheduler.h\
 	../threads/synch.h \
@@ -50,7 +51,8 @@ THREAD_H =../threads/copyright.h\
 	../machine/stats.h\
 	../machine/timer.h
 
-THREAD_C =../threads/main.cc\
+THREAD_C = \
+	../threads/main.cc\
 	../threads/list.cc\
 	../threads/scheduler.cc\
 	../threads/synch.cc \
@@ -66,7 +68,7 @@ THREAD_C =../threads/main.cc\
 
 THREAD_S = ../threads/switch.s
 
-THREAD_O =main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
+THREAD_O = main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
 	utility.o threadtest.o interrupt.o stats.o sysdep.o timer.o
 
 USERPROG_H = ../userprog/addrspace.h\
@@ -100,9 +102,22 @@ USERPROG_C = ../userprog/addrspace.cc\
 USERPROG_O = addrspace.o bitmap.o exception.o progtest.o console.o machine.o \
 	mipssim.o translate.o memoryManager.o processManager.o pcb.o userOpenFile.o sysOpenFile.o
 
-VM_H = 
-VM_C = 
-VM_O = 
+VM_H = \
+	../vm/vmManager.h \
+	../vm/swapManager.h \
+	../vm/iReplacement.h \
+	../vm/fifo.h \
+	../vm/lru.h \
+	../vm/randomReplacement.h
+
+VM_C = \
+	../vm/vmManager.cc \
+	../vm/swapManager.cc \
+	../vm/fifo.cc \
+	../vm/lru.cc \
+	../vm/randomReplacement.cc
+
+VM_O = vmManager.o swapManager.o fifo.o lru.o randomReplacement.o
 
 FILESYS_H =../filesys/directory.h \
 	../filesys/filehdr.h\

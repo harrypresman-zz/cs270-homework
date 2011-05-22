@@ -19,6 +19,7 @@
 #include "system.h"
 #include "addrspace.h"
 #include "noff.h"
+
 #ifdef HOST_SPARC
 #include <strings.h>
 #endif
@@ -60,71 +61,80 @@ static void SwapHeader (NoffHeader *noffH){
 
 AddrSpace::AddrSpace(OpenFile *executable){
 
-    pcb = new PCB( procMgr->getPID() , -1 ,currentThread);
-    procMgr->storePCB(pcb);
+    pcb = new PCB( procMgr->getPID() , -1 ,currentThread );
+    procMgr->storePCB( pcb );
     NoffHeader noffH;
 
     unsigned int i, size;
 
-    executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
-    if ((noffH.noffMagic != NOFFMAGIC) && 
-            (WordToHost(noffH.noffMagic) == NOFFMAGIC))
-        SwapHeader(&noffH);
-    ASSERT(noffH.noffMagic == NOFFMAGIC);
+    executable->ReadAt( (char*)&noffH, sizeof( noffH ), 0 );
+    if( (noffH.noffMagic != NOFFMAGIC) && 
+            (WordToHost(noffH.noffMagic) == NOFFMAGIC) )
+        SwapHeader( &noffH );
+    ASSERT( noffH.noffMagic == NOFFMAGIC );
 
     // how big is address space?
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + 
-           UserStackSize;	// we need to increase the size
+        UserStackSize;	// we need to increase the size
     // to leave room for the stack
-    numPages = divRoundUp(size, PageSize);
+
+    numPages = divRoundUp( size, PageSize );
     size = numPages * PageSize;
-    if (numPages > memMgr->getFreePageCount()) printf("Unable to allocate a page\n");
-    ASSERT(numPages <= memMgr->getFreePageCount());		// check we're not trying
-    // to run anything too big --
-    // at least until we have
-    // virtual memory
+#ifdef VM
+    if( numPages > vmMgr->getFreePageCount() ){
+        printf("Unable to allocate a page\n");
+    }
+    ASSERT( numPages <= vmMgr->getFreePageCount() );
+#else
+    if( numPages > memMgr->getFreePageCount() ){
+        printf("Unable to allocate a page\n");
+    }
+    // check we're not trying to run anything too big -- 
+    // at least until we have virtual memory
+    ASSERT( numPages <= memMgr->getFreePageCount() );
+#endif
+
 
     DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
             numPages, size);
+
     // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
-    for (i = 0; i < numPages; i++) {
+    for( i = 0; i < numPages; i++ ){
+#ifdef VM
+        int pageNum = vmMgr->getPage();
+#else
         int pageNum = memMgr->getPage();
         ASSERT( pageNum >= 0 );
+#endif
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = pageNum;
         DEBUG('t', "virtual page %d -> physical page %d\n", i, pageNum );
+#ifdef VM
+        pageTable[i].valid = FALSE;
+#else
         pageTable[i].valid = TRUE;
+#endif
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
-        pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
-        bzero( machine->mainMemory + pageNum * PageSize, PageSize );    // zero out the addresses used only by this user space
-        // a separate page, we could set its 
-        // pages to be read-only
+        pageTable[i].readOnly = FALSE;
     }
 
-
-
     // then, copy in the code and data segments into memory
-    if (noffH.code.size > 0) {
+    if( noffH.code.size > 0 ){
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
                 noffH.code.virtualAddr, noffH.code.size);
         ReadFile( noffH.code.virtualAddr, executable, noffH.code.size, 
-                  noffH.code.inFileAddr);
-        //executable->ReadAt( &(machine->mainMemory[noffH.code.virtualAddr]), noffH.code.size, 
-        //          noffH.code.inFileAddr);
+                  noffH.code.inFileAddr );
     }
-    if (noffH.initData.size > 0) {
+    if( noffH.initData.size > 0 ){
         DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
                 noffH.initData.virtualAddr, noffH.initData.size);
         ReadFile( noffH.initData.virtualAddr, executable, noffH.initData.size, 
-                  noffH.initData.inFileAddr);
-        //executable->ReadAt( &(machine->mainMemory[noffH.initData.virtualAddr]), noffH.initData.size, 
-        //          noffH.initData.inFileAddr);
+                  noffH.initData.inFileAddr );
     }
-    DEBUG('2', "Loaded program %d code | %d data | %d bss\n", noffH.code.size, noffH.initData.size, noffH.uninitData.size);
-
-
+    DEBUG('2', "Loaded program %d code | %d data | %d bss\n", 
+            noffH.code.size, noffH.initData.size, noffH.uninitData.size );
 }
 
 //----------------------------------------------------------------------
@@ -135,7 +145,12 @@ AddrSpace::AddrSpace(OpenFile *executable){
 AddrSpace::~AddrSpace(){
     for( int i = 0; i < numPages; i++ ){
         DEBUG('t', "Clearing page %d\n", pageTable[i].physicalPage );
+#ifdef VM
+        int page = vmMgr->getPhysicalPage( &pageTable[i] );
+        vmMgr->clearPage( pageTable[i].physicalPage );
+#else
         memMgr->clearPage( pageTable[i].physicalPage );
+#endif
     }
     delete pageTable;
     delete pcb;
@@ -149,21 +164,35 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
     // first, set up the translation table
     spaceDest->pageTable = new TranslationEntry[numPages];
     spaceDest->numPages = numPages;
-    
+
 
     // we need to duplicate all the pages into the new addrSpace
     for (int i = 0; i < numPages; i++) {
+#ifdef VM
+        int pageNum = vmMgr->getPage();
+#else
         int pageNum = memMgr->getPage();
-	if (pageNum < 0)
-	  printf("Unable to allocate a page\n");
-        ASSERT( pageNum>= 0 );
+#endif
+        if( pageNum < 0 ){
+            printf("Unable to allocate a page\n");
+        }
+        ASSERT( pageNum >= 0 );
         spaceDest->pageTable[i].virtualPage = i;
         spaceDest->pageTable[i].physicalPage = pageNum;
+#ifdef VM
+        // write to swap
+        vmMgr->copy( pageTable[i].physicalPage, pageNum );
+#else
         memcpy( machine->mainMemory + ( spaceDest->pageTable[i].physicalPage * PageSize ), 
                 machine->mainMemory + ( pageTable[i].physicalPage * PageSize ), 
                 PageSize );
+#endif
         DEBUG('t', "virtual page %d -> physical page %d\n", i, pageNum );
+#ifdef VM
+        spaceDest->pageTable[i].valid = FALSE;
+#else
         spaceDest->pageTable[i].valid = TRUE;
+#endif
         spaceDest->pageTable[i].use = FALSE;
         spaceDest->pageTable[i].dirty = FALSE;
         spaceDest->pageTable[i].readOnly = FALSE;
@@ -202,15 +231,18 @@ void AddrSpace::InitRegisters(){
     DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
 }
 
-bool AddrSpace::Translate(int virtAddr, int* physAddr){
+bool AddrSpace::Translate( int virtAddr, int* physAddr ){
     if( physAddr == NULL ) return false;
 
     int vPageNum = virtAddr/PageSize;
     int offset = virtAddr % PageSize;
 
     if( vPageNum >= numPages ) return false;
-
+#ifdef VM
+    int pPageNum = vmMgr->getPhysicalPage( &pageTable[ vPageNum ] );
+#else
     int pPageNum = pageTable[ vPageNum ].physicalPage;
+#endif
     *physAddr = ( pPageNum * PageSize ) + offset;
 
     return true;
@@ -218,21 +250,35 @@ bool AddrSpace::Translate(int virtAddr, int* physAddr){
 
 int AddrSpace::ReadFile( int vAddr, OpenFile* file, int size, int fileAddr ){
     int copySize = PageSize;
+
     while( size > 0 ){
         int pAddr;
 
         if( size < PageSize ) copySize = size;
+#ifdef VM
+        int offset = vAddr % PageSize;
 
+        // in the middle of a page, so copy less this page
+        if( copySize + offset >= PageSize ) copySize = PageSize - offset;
+
+        // get data from file, then write it to swap
         file->ReadAt( diskBuffer, copySize, fileAddr );
- 
-        // translate should return the offset in bytes from mainMemory
+
+        int vPageNum = vAddr/PageSize;
+        int sPageNum = pageTable[ vPageNum ].physicalPage;
+
+        vmMgr->writePage( sPageNum, diskBuffer, copySize, offset );
+#else
+        file->ReadAt( diskBuffer, copySize, fileAddr );
+
+        // translate handles the offset in bytes from mainMemory
         bool successful = Translate( vAddr, &pAddr );
-        
+
         if( ! successful ) return -1;
 
         bcopy( diskBuffer, machine->mainMemory + pAddr, copySize );
-
-        size -= PageSize;
+#endif
+        size -= copySize;
         vAddr += copySize;
         fileAddr += copySize;
     }

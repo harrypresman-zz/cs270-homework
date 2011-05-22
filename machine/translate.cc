@@ -204,8 +204,8 @@ ExceptionType Machine::Translate(int virtAddr, int* physAddr, int size, bool wri
                     virtAddr, pageTableSize);
             return AddressErrorException;
         } else if (!pageTable[vpn].valid) {
-            DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-                    virtAddr, pageTableSize);
+            DEBUG('a', "virtual page # %d not valid!\n", 
+                    virtAddr );
             return PageFaultException;
         }
         entry = &pageTable[vpn];
@@ -227,7 +227,13 @@ ExceptionType Machine::Translate(int virtAddr, int* physAddr, int size, bool wri
         DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
         return ReadOnlyException;
     }
+#ifdef VM
+    pageFrame = vmMgr->getPhysicalPage( entry );
+    vmMgr->markPage( pageFrame );
+    ASSERT( pageFrame >= 0 );
+#else
     pageFrame = entry->physicalPage;
+#endif
 
     // if the pageFrame is too big, there is something really wrong! 
     // An invalid translation was loaded into the page table or TLB. 
@@ -236,8 +242,7 @@ ExceptionType Machine::Translate(int virtAddr, int* physAddr, int size, bool wri
         return BusErrorException;
     }
     entry->use = TRUE;		// set the use, dirty bits
-    if (writing)
-        entry->dirty = TRUE;
+    if( writing ) entry->dirty = TRUE;
     *physAddr = pageFrame * PageSize + offset;
     ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
     DEBUG('a', "phys addr = 0x%x\n", *physAddr);

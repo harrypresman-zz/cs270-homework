@@ -26,8 +26,8 @@ clean:
 print:
 	/bin/csh -c "$(LPR) Makefile* */Makefile"
 	/bin/csh -c "$(LPR) threads/*.h threads/*.cc threads/*.s"
-	/bin/csh -c "$(LPR) userprog/*.h userprog/*.cc" 
 	/bin/csh -c "$(LPR) filesys/*.h filesys/*.cc
+	/bin/csh -c "$(LPR) userprog/*.h userprog/*.cc" 
 	/bin/csh -c "$(LPR) network/*.h network/*.cc 
 	/bin/csh -c "$(LPR) machine/*.h machine/*.cc
 	/bin/csh -c "$(LPR) bin/noff.h bin/coff.h bin/coff2noff.c"

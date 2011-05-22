@@ -147,7 +147,6 @@ Condition::~Condition() {
 }
 
 void Condition::Wait(Lock* conditionLock) { 
-	printf("Waiting\n");
 	if (conditionLock->isHeldByCurrentThread() == false)  return;
 
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);

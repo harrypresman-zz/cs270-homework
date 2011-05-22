@@ -11,8 +11,10 @@ DEFINES = -DTHREADS -DCHANGED
 #DEFINES += -DHW1_SEMAPHORES
 #DEFINES += -DHW1_LOCKS
 #DEFINES += -DHW1_CV
-DEFINES += -DHW1_TIME
+#DEFINES += -DHW1_TIME
+#DEFINES += -DVM
 INCPATH = -I../threads -I../machine
+#INCPATH += -I../vm
 HFILES = $(THREAD_H)
 CFILES = $(THREAD_C)
 C_OFILES = $(THREAD_O)
@@ -27,7 +29,7 @@ main.o: ../threads/main.cc ../threads/copyright.h ../threads/utility.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -42,7 +44,7 @@ list.o: ../threads/list.cc ../threads/copyright.h ../threads/list.h \
  /usr/include/bits/predefs.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -54,7 +56,7 @@ scheduler.o: ../threads/scheduler.cc ../threads/copyright.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -68,7 +70,7 @@ synch.o: ../threads/synch.cc ../threads/copyright.h ../threads/synch.h \
  /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -82,7 +84,7 @@ synchlist.o: ../threads/synchlist.cc ../threads/copyright.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -94,7 +96,7 @@ system.o: ../threads/system.cc ../threads/copyright.h ../threads/system.h \
  /usr/include/bits/predefs.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -108,7 +110,7 @@ thread.o: ../threads/thread.cc ../threads/copyright.h ../threads/thread.h \
  /usr/include/bits/predefs.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -123,7 +125,7 @@ utility.o: ../threads/utility.cc ../threads/copyright.h \
  /usr/include/bits/predefs.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -135,24 +137,21 @@ threadtest.o: ../threads/threadtest.cc ../threads/copyright.h \
  /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
  /usr/include/bits/sys_errlist.h /usr/include/string.h \
  /usr/include/xlocale.h ../threads/thread.h ../threads/scheduler.h \
  ../threads/list.h ../machine/interrupt.h ../threads/list.h \
- ../machine/stats.h ../machine/timer.h ../threads/utility.h \
- /usr/include/sys/time.h /usr/include/time.h /usr/include/bits/time.h \
- /usr/include/sys/select.h /usr/include/bits/select.h \
- /usr/include/bits/sigset.h
+ ../machine/stats.h ../machine/timer.h ../threads/utility.h
 interrupt.o: ../machine/interrupt.cc ../threads/copyright.h \
  ../machine/interrupt.h ../threads/list.h ../threads/copyright.h \
  ../threads/utility.h ../threads/bool.h ../machine/sysdep.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -164,7 +163,7 @@ sysdep.o: ../machine/sysdep.cc ../threads/copyright.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -201,7 +200,7 @@ stats.o: ../machine/stats.cc ../threads/copyright.h ../threads/utility.h \
  /usr/include/stdio.h /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \
@@ -213,7 +212,7 @@ timer.o: ../machine/timer.cc ../threads/copyright.h ../machine/timer.h \
  /usr/include/bits/predefs.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h \
+ /usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5.2/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  ../threads/stdarg.h /usr/include/bits/stdio_lim.h \

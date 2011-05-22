@@ -38,6 +38,9 @@ char* diskBuffer;
 PostOffice *postOffice;
 #endif
 
+#ifdef VM
+VMManager* vmMgr;
+#endif
 
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
@@ -164,15 +167,17 @@ void Initialize(int argc, char **argv){
 #ifdef NETWORK
     postOffice = new PostOffice(netname, rely, 10);
 #endif
+
+#ifdef VM
+    vmMgr = new VMManager();
+#endif
 }
 
 //----------------------------------------------------------------------
 // Cleanup
 // 	Nachos is halting.  De-allocate global data structures.
 //----------------------------------------------------------------------
-    void
-Cleanup()
-{
+void Cleanup(){
     printf("\nCleaning up...\n");
 #ifdef NETWORK
     delete postOffice;
@@ -191,6 +196,10 @@ Cleanup()
 #ifdef FILESYS
     delete synchDisk;
 #endif
+
+#ifdef VM
+    delete vmMgr;
+#endif VM
 
     delete timer;
     delete scheduler;
