@@ -158,6 +158,9 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
     DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
 			numBytes, position, fileLength);
 
+
+//LEFTOFF finding where  we can write in the sector block 
+//if not at start or crosses multiple sectors
     firstSector = divRoundDown(position, SectorSize);
     lastSector = divRoundDown(position + numBytes - 1, SectorSize);
     numSectors = 1 + lastSector - firstSector;

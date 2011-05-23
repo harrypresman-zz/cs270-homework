@@ -79,7 +79,7 @@
 
 FileSystem::FileSystem(bool format)
 { 
-    DEBUG('f', "Initializing the file system.\n");
+    DEBUG('f', "Initializing the file system. Number of sectors:%d. Number of Directories:%d\n",NumSectors, NumDirEntries);
     if (format) {
         BitMap *freeMap = new BitMap(NumSectors);
         Directory *directory = new Directory(NumDirEntries);

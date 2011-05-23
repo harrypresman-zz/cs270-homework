@@ -41,6 +41,44 @@
 bool
 FileHeader::Allocate(BitMap *freeMap, int fileSize)
 { 
+#ifdef FILESYS
+    numBytes = fileSize;
+    numSectors  = divRoundUp(fileSize, SectorSize);
+    if (freeMap->NumClear() < numSectors)
+	return FALSE;		// not enough space
+
+    int i = 0;
+    int sectorsToAllocate = numSectors;
+    DEBUG('f', "Allocating %d sectors for a file size of %d.\n",  numSectors, fileSize);
+    
+    while(sectorsToAllocate > 0){
+	if (i < NumDirect){
+	  dataSectors[i] = freeMap->Find();
+	  sectorsToAllocate--;
+	}
+	else{
+	  indirectPointers[i-NumDirect] = new IndirectPointerBlock();
+	  DEBUG('f', "\nAllocating new indirectPointerBlock[%d]:" , (i-NumDirect));
+	  int sectorsToAddToThisPage = sectorsToAllocate;
+	  if (sectorsToAddToThisPage > MaxIndirectPointers)
+	    sectorsToAddToThisPage = MaxIndirectPointers;
+	  for (int j = 0 ; j < sectorsToAddToThisPage; j++){
+	  
+	    DEBUG('f', "." );
+	    //DEBUG('f', "Putting a sector to indirectPointer[%d].\n" , (i-NumDirect));
+	    indirectPointers[i-NumDirect]->PutSector(freeMap->Find());
+	    sectorsToAllocate--;
+	  }
+	  
+	}      
+     
+      i++;
+    }
+    DEBUG('f', "\nReturning True for filehdr alloc \n" );
+	    
+    return TRUE;
+    
+#else
     numBytes = fileSize;
     numSectors  = divRoundUp(fileSize, SectorSize);
     if (freeMap->NumClear() < numSectors)
@@ -48,7 +86,11 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 
     for (int i = 0; i < numSectors; i++)
 	dataSectors[i] = freeMap->Find();
+	 DEBUG('f', "\nReturning True for filehdr alloc \n" );
     return TRUE;
+#endif
+    
+    
 }
 
 //----------------------------------------------------------------------
@@ -61,10 +103,22 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 void 
 FileHeader::Deallocate(BitMap *freeMap)
 {
+
+
     for (int i = 0; i < numSectors; i++) {
-	ASSERT(freeMap->Test((int) dataSectors[i]));  // ought to be marked!
-	freeMap->Clear((int) dataSectors[i]);
+        printf("Delloc %d (%d)\n",numSectors, NumDirect);
+        if (numSectors < NumDirect){
+            ASSERT(freeMap->Test((int) dataSectors[i]));  // ought to be marked!
+            freeMap->Clear((int) dataSectors[i]);
+        }
+        else{
+        #ifdef XXXTODOFILESYS
+		    indirectPointers[i-NumDirect]->Deallocate(freeMap);
+		#endif
+        }
     }
+    
+
 }
 
 //----------------------------------------------------------------------

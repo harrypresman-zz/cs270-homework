@@ -31,6 +31,7 @@
 void
 Copy(char *from, char *to)
 {
+	DEBUG('f',"Copying %s to %s \n",from,to);
     FILE *fp;
     OpenFile* openFile;
     int amountRead, fileLength;
