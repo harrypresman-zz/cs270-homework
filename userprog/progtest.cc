@@ -20,8 +20,7 @@
 //	memory, and jump to it.
 //----------------------------------------------------------------------
 
-void
-StartProcess(char *filename){
+void StartProcess(char *filename){
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
 

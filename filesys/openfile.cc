@@ -138,7 +138,7 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
 					&buf[(i - firstSector) * SectorSize]);
 
     // copy the part we want
-    bcopy(&buf[position - (firstSector * SectorSize)], into, numBytes);
+    bcopy(buf + ( position - (firstSector * SectorSize) ), into, numBytes);
     delete [] buf;
     return numBytes;
 }

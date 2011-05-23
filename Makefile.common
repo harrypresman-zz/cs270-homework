@@ -83,7 +83,7 @@ USERPROG_H = ../userprog/addrspace.h\
 	../userprog/pcb.h\
 	../userprog/sysOpenFile.h\
 	../userprog/userOpenFile.h\
-	../userprog/memoryManager.h
+	../userprog/memoryManager.h \
 
 USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/bitmap.cc\
@@ -97,7 +97,7 @@ USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/pcb.cc\
 	../userprog/sysOpenFile.cc\
 	../userprog/userOpenFile.cc\
-	../userprog/memoryManager.cc
+	../userprog/memoryManager.cc \
 
 USERPROG_O = addrspace.o bitmap.o exception.o progtest.o console.o machine.o \
 	mipssim.o translate.o memoryManager.o processManager.o pcb.o userOpenFile.o sysOpenFile.o
@@ -124,6 +124,7 @@ FILESYS_H =../filesys/directory.h \
 	../filesys/filesys.h \
 	../filesys/openfile.h\
 	../filesys/synchdisk.h\
+	../filesys/IndirectPointerBlock.h \
 	../machine/disk.h
 FILESYS_C =../filesys/directory.cc\
 	../filesys/filehdr.cc\
@@ -131,9 +132,10 @@ FILESYS_C =../filesys/directory.cc\
 	../filesys/fstest.cc\
 	../filesys/openfile.cc\
 	../filesys/synchdisk.cc\
+	../filesys/IndirectPointerBlock.cc \
 	../machine/disk.cc
-FILESYS_O =directory.o filehdr.o filesys.o fstest.o openfile.o synchdisk.o\
-	disk.o
+FILESYS_O =directory.o filehdr.o filesys.o fstest.o openfile.o synchdisk.o \
+	disk.o IndirectPointerBlock.o
 
 NETWORK_H = ../network/post.h ../machine/network.h
 NETWORK_C = ../network/nettest.cc ../network/post.cc ../machine/network.cc

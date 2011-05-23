@@ -109,7 +109,7 @@ int main(int argc, char **argv){
         ThreadTest(i);
     }
 #else
-    ThreadTest();
+    //ThreadTest();
 #endif
 #endif
 
