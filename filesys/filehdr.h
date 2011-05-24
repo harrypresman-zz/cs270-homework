@@ -18,9 +18,10 @@
 #include "bitmap.h"
 #include "IndirectPointerBlock.h"
 
-#define NumDirect 	((SectorSize - 2 * sizeof(int)) / sizeof(int))
-#define NumInDirect 	((SectorSize - 2 * sizeof(int) - 4 * sizeof(int)) / (sizeof(IndirectPointerBlock*) + sizeof(int)))
-#define MaxFileSize 	(NumDirect * SectorSize)
+
+#define NumDirect 	4
+#define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/sizeof(IndirectPointerBlock*)
+#define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.

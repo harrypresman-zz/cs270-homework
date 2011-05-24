@@ -38,12 +38,12 @@ void IndirectPointerBlock::WriteBack( int sector ) {
 //	"offset" is the location within the file of the byte in question
 //----------------------------------------------------------------------
 
-int IndirectPointerBlock::ByteToSector(int offset) {
+int IndirectPointerBlock::ByteToSector(int sector) {
     //TODO
     //byte offset relative to the beginning of its IndirectPointerBlock. 
     //if an IndirectPointerBlock covers blocks 60-90 and I pass in an offset of SectorSize*10, 
     //I know that the sector number can be found in the 10th entry. 
-    return(dataSectors[offset / SectorSize]);
+    return(dataSectors[sector / SectorSize]);
 }
 
 

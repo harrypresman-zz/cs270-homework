@@ -49,7 +49,9 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 
     int i = 0;
     int sectorsToAllocate = numSectors;
-    DEBUG('f', "Allocating %d sectors for a file size of %d.\n",  numSectors, fileSize);
+
+    
+    DEBUG('f', "Allocating %d sectors for a file size of %d. Sector Size:%d. Max Direct:Indirect %d:%d. Sectors/Indirect %d. Max File Size:%d\n",  numSectors, fileSize, SectorSize, NumDirect,NumInDirect,MaxIndirectPointers,MaxFileSize);
     
     while(sectorsToAllocate > 0){
 	if (i < NumDirect){
@@ -66,7 +68,8 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 	  
 	    DEBUG('f', "." );
 	    //DEBUG('f', "Putting a sector to indirectPointer[%d].\n" , (i-NumDirect));
-	    indirectPointers[i-NumDirect]->PutSector(freeMap->Find());
+	    int newSec = freeMap->Find();
+	    indirectPointers[i-NumDirect]->PutSector(newSec);
 	    sectorsToAllocate--;
 	  }
 	  
@@ -160,7 +163,20 @@ FileHeader::WriteBack(int sector)
 int
 FileHeader::ByteToSector(int offset)
 {
+  #ifdef FILESYS
+    int sector = offset/ SectorSize;
+    if (sector < NumDirect){
+      return dataSectors[sector];
+    }
+    else{
+      int relSec = sector-NumDirect;
+      int newOff = offset - 4*SectorSize - ((sector - 4)/SectorSize) * SectorSize;
+      return indirectPointers[relSec]->ByteToSector(newOff);
+      
+    }
+  #else  
     return(dataSectors[offset / SectorSize]);
+  #endif
 }
 
 //----------------------------------------------------------------------

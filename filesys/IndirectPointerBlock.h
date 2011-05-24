@@ -13,7 +13,7 @@ class IndirectPointerBlock {
     void FetchFrom(int sectorNumber); 	// Initialize IndirectPointerBlock header from disk
     void WriteBack(int sectorNumber); 	// Write modifications to IndirectPointerBlock header
 					//  back to disk
-    int ByteToSector(int offset);	// Convert a byte offset into the file
+    int ByteToSector(int sector);	// Convert a byte offset into the file
 					// to the disk sector containing
 					// the byte    
     void Deallocate(BitMap *bitMap);  		// De-allocate this file's 
