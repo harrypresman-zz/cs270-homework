@@ -60,6 +60,7 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 	}
 	else{
 	  indirectPointers[i-NumDirect] = new IndirectPointerBlock();
+	  indirectSector[i-NumDirect] = freeMap->Find();
 	  DEBUG('f', "\nAllocating new indirectPointerBlock[%d]:" , (i-NumDirect));
 	  int sectorsToAddToThisPage = sectorsToAllocate;
 	  if (sectorsToAddToThisPage > MaxIndirectPointers)
@@ -115,9 +116,10 @@ FileHeader::Deallocate(BitMap *freeMap)
             freeMap->Clear((int) dataSectors[i]);
         }
         else{
-        #ifdef XXXTODOFILESYS
+        #ifdef FILESYS
 		    indirectPointers[i-NumDirect]->Deallocate(freeMap);
-		#endif
+		    freeMap->Clear(indirectSector[i-NumDirect]);
+	#endif
         }
     }
     
@@ -135,6 +137,15 @@ void
 FileHeader::FetchFrom(int sector)
 {
     synchDisk->ReadSector(sector, (char *)this);
+    #ifdef FILESYS
+    if (numSectors > NumDirect){
+      for(int i = 0; i < numSectors- NumDirect; i++){
+	indirectPointers[i]->FetchFrom(indirectSector[i]);
+      }
+    }
+      
+      
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -148,6 +159,15 @@ void
 FileHeader::WriteBack(int sector)
 {
     synchDisk->WriteSector(sector, (char *)this); 
+#ifdef FILESYS
+    if (numSectors > NumDirect){
+      for(int i = 0; i < numSectors- NumDirect; i++){
+	indirectPointers[i]->WriteBack(indirectSector[i]);
+      }
+    }
+      
+      
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -217,4 +237,37 @@ FileHeader::Print()
         printf("\n"); 
     }
     delete [] data;
+}
+
+int FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
+    DEBUG('f',"Extending file by %d sectors\n",sectorsToAllocate);
+	if (sectorsToAllocate <= 0)
+		return -1;
+    if (freeMap->NumClear() < sectorsToAllocate)
+        return -1;
+
+	int i = numSectors;	
+	while(sectorsToAllocate > 0){
+	    if (i < NumDirect){
+	      dataSectors[i] = freeMap->Find();
+	      sectorsToAllocate--;
+	    }
+	    else{
+	      indirectPointers[i-NumDirect] = new IndirectPointerBlock();
+	      DEBUG('f', "\nAllocating new indirectPointerBlock[%d]:" , (i-NumDirect));
+	      int sectorsToAddToThisPage = sectorsToAllocate;
+	      if (sectorsToAddToThisPage > MaxIndirectPointers)
+		    sectorsToAddToThisPage = MaxIndirectPointers;
+	      for (int j = 0 ; j < sectorsToAddToThisPage; j++){
+	      
+		    DEBUG('f', "." );
+		    //DEBUG('f', "Putting a sector to indirectPointer[%d].\n" , (i-NumDirect));
+		    int newSec = freeMap->Find();
+		    indirectPointers[i-NumDirect]->PutSector(newSec);
+		    sectorsToAllocate--;
+	      }
+	    }
+      
+	}   
+    return 0;
 }

@@ -20,7 +20,7 @@
 
 
 #define NumDirect 	4
-#define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/sizeof(IndirectPointerBlock*)
+#define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(IndirectPointerBlock*)+sizeof(int))
 #define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
@@ -58,12 +58,15 @@ class FileHeader {
 					// in bytes
 
     void Print();			// Print the contents of the file.
+    
+    int ExtendFile(BitMap *freeMap, int sectors); //extend the file by N sectors
 
   private:
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
     int dataSectors[NumDirect];		// Disk sector numbers for each data 
 					// block in the file
+    int indirectSector[NumInDirect]; //other way to store where to persist this info?
     IndirectPointerBlock* indirectPointers[NumInDirect];
     
 };
