@@ -63,7 +63,21 @@ Directory::~Directory()
 void
 Directory::FetchFrom(OpenFile *file)
 {
+#ifdef FILESYS
+    //Get tableSize
+    (void) file->ReadAt((char *)&tableSize, sizeof(int), 0);
+    DEBUG('f', "Tablesize :%d \n", tableSize);
+    DirectoryEntry* newTable = new DirectoryEntry[tableSize];
+
+    for (int i = 0; i < tableSize; i++)
+	newTable[i].inUse = FALSE;
+
+    delete table;
+    table = newTable;    
+    (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), sizeof(int));    
+#else
     (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -76,7 +90,15 @@ Directory::FetchFrom(OpenFile *file)
 void
 Directory::WriteBack(OpenFile *file)
 {
+#ifdef FILESYS
+    DEBUG('f',"Writing a table of size: %d\n",tableSize);
+    (void) file->WriteAt((char *) &tableSize, sizeof(int), 0);
+    (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), sizeof(int));
+#else
     (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+    
+    
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -139,6 +161,38 @@ Directory::Add(char *name, int newSector)
             table[i].sector = newSector;
         return TRUE;
 	}
+
+    //we had no space lets allocate more
+    int oldTableSize = tableSize;
+    tableSize = (int)(oldTableSize * 1.5);
+    DEBUG('f',"** Extending table size from %d to %d \n", oldTableSize,tableSize);
+    DirectoryEntry *newTable = new DirectoryEntry[tableSize];
+    
+    for (int i = 0; i < tableSize; i++){
+      if (i < oldTableSize){
+	  //copy the old entries
+	  newTable[i].inUse = table[i].inUse;
+	  newTable[i].sector = table[i].sector;
+	  strncpy(newTable[i].name, table[i].name, FileNameMaxLen+1);
+      }
+      else{
+	//mark the new entries as not in use
+	newTable[i].inUse = FALSE;
+      }
+    }
+    //remove old and swap
+    delete [] table;
+    table = newTable;
+    //now add
+    if (!table[oldTableSize].inUse){
+            table[oldTableSize].inUse = TRUE;
+            strncpy(table[oldTableSize].name, name, FileNameMaxLen); 
+            table[oldTableSize].sector = newSector;     
+	    return true;
+    }
+    //return this->Add(name,newSector);
+	
+    //should never get here
     return FALSE;	// no space.  Fix when we have extensible files.
 }
 
