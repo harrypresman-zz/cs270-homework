@@ -153,10 +153,7 @@ BitMap* getFreeMap(){
     return freeMap;
 }
 
-int
-OpenFile::WriteAt(char *from, int numBytes, int position)
-{
-  
+int OpenFile::WriteAt(char *from, int numBytes, int position){
 #ifdef FILESYS
     int fileLength = hdr->FileLength();
     int i, firstSector, lastSector, numSectors;
@@ -169,111 +166,111 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
     int first_file_sector = hdr->ByteToSector(0); // Assume files start at beginning of sector
 
     if (first_file_sector + num_sectors > SectorSize*NumSectors) {
-	return 0;
+        return 0;
     }
     DEBUG('1', "Entering writeAt func...\n");
 
     // CASE 1
     if ((position + numBytes) <= fileLength) {
-            //DEBUG('1', "Case 1!-------------------------\n");
-	    if ((position + numBytes) > fileLength)
-		numBytes = fileLength - position;
+        //DEBUG('1', "Case 1!-------------------------\n");
+        if ((position + numBytes) > fileLength)
+            numBytes = fileLength - position;
 
-	    DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
-				numBytes, position, fileLength);
+        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+                numBytes, position, fileLength);
 
-	    firstSector = divRoundDown(position, SectorSize);
-	    lastSector = divRoundDown(position + numBytes - 1, SectorSize);
-	    numSectors = 1 + lastSector - firstSector;
+        firstSector = divRoundDown(position, SectorSize);
+        lastSector = divRoundDown(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
 
-	    buf = new char[numSectors * SectorSize];
+        buf = new char[numSectors * SectorSize];
 
-	    firstAligned = (position == (firstSector * SectorSize));
-	    lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	    // read in first and last sector, if they are to be partially modified
-	    if (!firstAligned)
-		ReadAt(buf, SectorSize, firstSector * SectorSize);	
-	    if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-		ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-					SectorSize, lastSector * SectorSize);	
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-            //DEBUG('1', "Midway through....\n");
+        //DEBUG('1', "Midway through....\n");
 
-	    // copy in the bytes we want to change 
-	    bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
 
-	    // write modified sectors back
-	    for (i = firstSector; i <= lastSector; i++)	
-		synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-						&buf[(i - firstSector) * SectorSize]);
-	    delete [] buf;
-	    //DEBUG('1', "Exiting case 1....\n");
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        delete [] buf;
+        //DEBUG('1', "Exiting case 1....\n");
 
-	    //return numBytes;
+        //return numBytes;
     }
 
     // CASE 2
     else if (position < fileLength) {
-	//DEBUG('1', "Case 2!-------------------------\n");
-	//int last_sector = hdr->ByteToSector(fileLength - 1);
-	int last_byte = position;
-	int offset = last_byte - divRoundDown(last_byte, SectorSize)*SectorSize;
-	int newSectors  = divRoundUp(numBytes - (SectorSize - offset), SectorSize);
+        //DEBUG('1', "Case 2!-------------------------\n");
+        //int last_sector = hdr->ByteToSector(fileLength - 1);
+        int last_byte = position;
+        int offset = last_byte - divRoundDown(last_byte, SectorSize)*SectorSize;
+        int newSectors  = divRoundUp(numBytes - (SectorSize - offset), SectorSize);
 
-	OpenFile* freeMapFile = new OpenFile(FreeMapSector);
+        OpenFile* freeMapFile = new OpenFile(FreeMapSector);
         BitMap* freeMap = new BitMap(NumSectors);
 
         DEBUG('1', "Fetching free Map 88888888888888888888888888\n");
         freeMap->FetchFrom(freeMapFile);
-	DEBUG('1', "DONE Fetching free Map 88888888888888888888888888\n");
+        DEBUG('1', "DONE Fetching free Map 88888888888888888888888888\n");
 
-	if (!hdr->ExtendFile(freeMap, newSectors)) {
-		printf("Not enough free disk space to write to file. Ignoring write.\n");
-		return 0;
-	}
+        if (!hdr->ExtendFile(freeMap, newSectors)) {
+            printf("Not enough free disk space to write to file. Ignoring write.\n");
+            return 0;
+        }
 
-	freeMap->WriteBack(freeMapFile);
+        freeMap->WriteBack(freeMapFile);
 
-	delete freeMapFile;
-	delete freeMap;
+        delete freeMapFile;
+        delete freeMap;
 
-	//WriteAt(from, numBytes, position);
+        //WriteAt(from, numBytes, position);
 
-if ((position + numBytes) > fileLength) {
-		numBytes = fileLength - position;
-            }
+        if ((position + numBytes) > fileLength) {
+            numBytes = fileLength - position;
+        }
 
-	    DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
-				numBytes, position, fileLength);
+        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+                numBytes, position, fileLength);
 
-	    firstSector = divRoundDown(position, SectorSize);
-	    lastSector = divRoundDown(position + numBytes - 1, SectorSize);
-	    numSectors = 1 + lastSector - firstSector;
+        firstSector = divRoundDown(position, SectorSize);
+        lastSector = divRoundDown(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
 
-	    buf = new char[numSectors * SectorSize];
+        buf = new char[numSectors * SectorSize];
 
-	    firstAligned = (position == (firstSector * SectorSize));
-	    lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	    // read in first and last sector, if they are to be partially modified
-	    if (!firstAligned)
-		ReadAt(buf, SectorSize, firstSector * SectorSize);	
-	    if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-		ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-					SectorSize, lastSector * SectorSize);	
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-	    // copy in the bytes we want to change 
-	    bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
 
 
-	    // write modified sectors back
-	    for (i = firstSector; i <= lastSector; i++)	 {
-		DEBUG('1', "Writing modified sector %d at location given %d\n", i, hdr->ByteToSector(i * SectorSize));
-		synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-						&buf[(i - firstSector) * SectorSize]);
-	    }
-	    delete [] buf;
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	 {
+            DEBUG('1', "Writing modified sector %d at location given %d\n", i, hdr->ByteToSector(i * SectorSize));
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        }
+        delete [] buf;
     }
 
     // CASE 3
@@ -282,234 +279,229 @@ if ((position + numBytes) > fileLength) {
 
         //DEBUG('1', "Case 3!-------------------------\n");
 
-	//int last_sector = hdr->ByteToSector(fileLength - 1);
-	int last_byte;
+        //int last_sector = hdr->ByteToSector(fileLength - 1);
+        int last_byte;
 
-	if (fileLength == 0) {
-		last_byte = 0;
-	}
-	else {
-		last_byte = fileLength - 1;
-	}
+        if (fileLength == 0) {
+            last_byte = 0;
+        }
+        else {
+            last_byte = fileLength - 1;
+        }
 
-	int offset = last_byte - divRoundDown(last_byte, SectorSize)*SectorSize;
+        int offset = last_byte - divRoundDown(last_byte, SectorSize)*SectorSize;
 
-	int newSectors  = divRoundUp(numBytes - (SectorSize - offset), SectorSize);
+        int newSectors  = divRoundUp(numBytes - (SectorSize - offset), SectorSize);
 
-	DEBUG('1', "Currently have %d sectors and want %d new sectors\n", numSectors, newSectors);
+        DEBUG('1', "Currently have %d sectors and want %d new sectors\n", numSectors, newSectors);
 
-	if ((numSectors == 0)&&(newSectors == 0)) {
-		newSectors++;
-	}
-	
+        if ((numSectors == 0)&&(newSectors == 0)) {
+            newSectors++;
+        }
 
-	DEBUG('1', "OPENING free Map 88888888888888888888888888\n");
-	OpenFile* freeMapFile = new OpenFile(FreeMapSector);
-	DEBUG('1', "DONE OPENING free Map 88888888888888888888888888\n");
+
+        DEBUG('1', "OPENING free Map 88888888888888888888888888\n");
+        OpenFile* freeMapFile = new OpenFile(FreeMapSector);
+        DEBUG('1', "DONE OPENING free Map 88888888888888888888888888\n");
         BitMap* freeMap = new BitMap(NumSectors);
 
         DEBUG('1', "Fetching free Map 88888888888888888888888888\n");
         freeMap->FetchFrom(freeMapFile);
-	DEBUG('1', "DONE Fetching free Map 88888888888888888888888888\n");;
+        DEBUG('1', "DONE Fetching free Map 88888888888888888888888888\n");;
 
-	
-	if (!hdr->ExtendFile(freeMap, newSectors)) {
-		printf("Not enough free disk space to write to file. Ignoring write.\n");
-		return 0;
-	}
 
-	DEBUG('1', "STARTING FREE MAP WRITE BACK 9999999999999999999999999999999999999\n");;
-	freeMap->WriteBack(freeMapFile);
-	DEBUG('1', "DONE Writing Back free Map 9999999999999999999999999999999999999\n");
+        if (!hdr->ExtendFile(freeMap, newSectors)) {
+            printf("Not enough free disk space to write to file. Ignoring write.\n");
+            return 0;
+        }
 
-	delete freeMapFile;
-	delete freeMap;
+        DEBUG('1', "STARTING FREE MAP WRITE BACK 9999999999999999999999999999999999999\n");;
+        freeMap->WriteBack(freeMapFile);
+        DEBUG('1', "DONE Writing Back free Map 9999999999999999999999999999999999999\n");
 
-	fileLength = hdr->FileLength();
+        delete freeMapFile;
+        delete freeMap;
 
-	//WriteAt(from, numBytes, position);
+        fileLength = hdr->FileLength();
 
-	    if ((position + numBytes) > fileLength) {
-		numBytes = fileLength - position;
-            }
+        //WriteAt(from, numBytes, position);
 
-	    DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
-				numBytes, position, fileLength);
+        if ((position + numBytes) > fileLength) {
+            numBytes = fileLength - position;
+        }
 
-	    firstSector = divRoundDown(position, SectorSize);
-	    lastSector = divRoundDown(position + numBytes - 1, SectorSize);
-	    numSectors = 1 + lastSector - firstSector;
+        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+                numBytes, position, fileLength);
 
-	    buf = new char[numSectors * SectorSize];
+        firstSector = divRoundDown(position, SectorSize);
+        lastSector = divRoundDown(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
 
-	    firstAligned = (position == (firstSector * SectorSize));
-	    lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        buf = new char[numSectors * SectorSize];
 
-	    // read in first and last sector, if they are to be partially modified
-	    if (!firstAligned)
-		ReadAt(buf, SectorSize, firstSector * SectorSize);	
-	    if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-		ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-					SectorSize, lastSector * SectorSize);	
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	    // copy in the bytes we want to change 
-	    bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-	    // write modified sectors back
-	    for (i = firstSector; i <= lastSector; i++)	 {
-		DEBUG('1', "Writing modified sector %d at location given %d\n", i, hdr->ByteToSector(i * SectorSize));
-		synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-						&buf[(i - firstSector) * SectorSize]);
-	    }
-	    delete [] buf;
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	 {
+            DEBUG('1', "Writing modified sector %d at location given %d\n", i, hdr->ByteToSector(i * SectorSize));
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        }
+        delete [] buf;
     }
     //DEBUG('1', "Exiting writeAt func...\n");
 
     return numBytes;    
-    
+
 #elif defined FIXLESYS
     int fileLength = hdr->FileLength();
     int i, firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
     if (numBytes <=0)
-    	return 0;
+        return 0;
 
     if (position+numBytes <= fileLength){ //if in bounds
 
-		DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
-				numBytes, position, fileLength);
+        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+                numBytes, position, fileLength);
 
 
-		//LEFTOFF finding where  we can write in the sector block 
-		//if not at start or crosses multiple sectors
-		firstSector = divRoundDown(position, SectorSize);
-		lastSector = divRoundDown(position + numBytes - 1, SectorSize);
-		numSectors = 1 + lastSector - firstSector;
+        //LEFTOFF finding where  we can write in the sector block 
+        //if not at start or crosses multiple sectors
+        firstSector = divRoundDown(position, SectorSize);
+        lastSector = divRoundDown(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
 
-		buf = new char[numSectors * SectorSize];
+        buf = new char[numSectors * SectorSize];
 
-		firstAligned = (position == (firstSector * SectorSize));
-		lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	// read in first and last sector, if they are to be partially modified
-		if (!firstAligned)
-		    ReadAt(buf, SectorSize, firstSector * SectorSize);	
-		if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-		    ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-					SectorSize, lastSector * SectorSize);	
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-	// copy in the bytes we want to change 
-		bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
 
-	// write modified sectors back
-		for (i = firstSector; i <= lastSector; i++)	
-		    synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-						&buf[(i - firstSector) * SectorSize]);
-		delete [] buf;
-		return numBytes;
-		
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        delete [] buf;
+        return numBytes;
+
     }//if in bounds
     else if( (position >= fileLength) ) { //Append end or past
-    	//LEFTOFF
-    	int start = fileLength; // we need to start adding sectors from end of the file
-	firstSector = divRoundDown(start, SectorSize);
-	lastSector = divRoundUp(position + numBytes - 1, SectorSize);
-	numSectors = 1 + lastSector - firstSector;
-	BitMap* freeMap = getFreeMap();    	
-	if (hdr->ExtendFile(freeMap, numSectors) == -1){
-		bool noSpace = false;
-		ASSERT(noSpace);
-	}
+        //LEFTOFF
+        int start = fileLength; // we need to start adding sectors from end of the file
+        firstSector = divRoundDown(start, SectorSize);
+        lastSector = divRoundUp(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
+        BitMap* freeMap = getFreeMap();    	
+        if (hdr->ExtendFile(freeMap, numSectors) == -1){
+            bool noSpace = false;
+            ASSERT(noSpace);
+        }
 
-	buf = new char[numSectors * SectorSize];
+        buf = new char[numSectors * SectorSize];
 
-	firstAligned = (position == (firstSector * SectorSize));
-	lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	//TODO LEFTOF TEST
-	
-	// read in first and last sector, if they are to be partially modified
-	if (!firstAligned)
-	    ReadAt(buf, SectorSize, firstSector * SectorSize);	
-	if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-	    ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-				SectorSize, lastSector * SectorSize);	
+        //TODO LEFTOF TEST
 
-	// copy in the bytes we want to change 
-	bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-	// write modified sectors back
-	for (i = firstSector; i <= lastSector; i++)	
-	    synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-					&buf[(i - firstSector) * SectorSize]);
-	delete [] buf;
-	return numBytes;
-    	
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        delete [] buf;
+        return numBytes;
+
     }
     else if(position+numBytes > fileLength){ //over write and extend
-    	int start = position; // we need to start adding sectors from end of the file
-	firstSector = divRoundDown(start, SectorSize);
-	lastSector = divRoundDown(position + numBytes - 1, SectorSize);
-	numSectors = 1 + lastSector - firstSector;
-	BitMap* freeMap = getFreeMap();    	
-	if (hdr->ExtendFile(freeMap, numSectors) == -1){
-		bool noSpace = false;
-		ASSERT(noSpace);
-	}
+        int start = position; // we need to start adding sectors from end of the file
+        firstSector = divRoundDown(start, SectorSize);
+        lastSector = divRoundDown(position + numBytes - 1, SectorSize);
+        numSectors = 1 + lastSector - firstSector;
+        BitMap* freeMap = getFreeMap();    	
+        if (hdr->ExtendFile(freeMap, numSectors) == -1){
+            bool noSpace = false;
+            ASSERT(noSpace);
+        }
 
-	buf = new char[numSectors * SectorSize];
+        buf = new char[numSectors * SectorSize];
 
-	firstAligned = (position == (firstSector * SectorSize));
-	lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
+        firstAligned = (position == (firstSector * SectorSize));
+        lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-	//TODO LEFTOF DO WE ZERO OUT FOR GAPS?
-	
-	// read in first and last sector, if they are to be partially modified
-	if (!firstAligned)
-	    ReadAt(buf, SectorSize, firstSector * SectorSize);	
-	if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-	    ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-				SectorSize, lastSector * SectorSize);	
+        //TODO LEFTOF DO WE ZERO OUT FOR GAPS?
 
-	// copy in the bytes we want to change 
-	bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+        // read in first and last sector, if they are to be partially modified
+        if (!firstAligned)
+            ReadAt(buf, SectorSize, firstSector * SectorSize);	
+        if (!lastAligned && ((firstSector != lastSector) || firstAligned))
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
+                    SectorSize, lastSector * SectorSize);	
 
-	// write modified sectors back
-	for (i = firstSector; i <= lastSector; i++)	
-	    synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-					&buf[(i - firstSector) * SectorSize]);
-	delete [] buf;
-	return numBytes;
-    
+        // copy in the bytes we want to change 
+        bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
+
+        // write modified sectors back
+        for (i = firstSector; i <= lastSector; i++)	
+            synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
+                    &buf[(i - firstSector) * SectorSize]);
+        delete [] buf;
+        return numBytes;
+
     }
     else{
-	DEBUG('f', "UNKNOWN position condition reached\n");
-	bool howDidTheFileWriteGetHere= false;
-	ASSERT(howDidTheFileWriteGetHere);
-      
-    }
-      
-    
-    
-    
-#else
+        DEBUG('f', "UNKNOWN position condition reached\n");
+        bool howDidTheFileWriteGetHere= false;
+        ASSERT(howDidTheFileWriteGetHere);
 
+    }
+#else
     int fileLength = hdr->FileLength();
     int i, firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
     if ((numBytes <= 0) || (position >= fileLength))
-	return 0;				// check request
+        return 0;				// check request
     if ((position + numBytes) > fileLength)
-	numBytes = fileLength - position;
+        numBytes = fileLength - position;
     DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
-			numBytes, position, fileLength);
+            numBytes, position, fileLength);
 
 
-//LEFTOFF finding where  we can write in the sector block 
-//if not at start or crosses multiple sectors
+    //LEFTOFF finding where  we can write in the sector block 
+    //if not at start or crosses multiple sectors
     firstSector = divRoundDown(position, SectorSize);
     lastSector = divRoundDown(position + numBytes - 1, SectorSize);
     numSectors = 1 + lastSector - firstSector;
@@ -519,20 +511,20 @@ if ((position + numBytes) > fileLength) {
     firstAligned = (position == (firstSector * SectorSize));
     lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 
-// read in first and last sector, if they are to be partially modified
+    // read in first and last sector, if they are to be partially modified
     if (!firstAligned)
         ReadAt(buf, SectorSize, firstSector * SectorSize);	
     if (!lastAligned && ((firstSector != lastSector) || firstAligned))
         ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-				SectorSize, lastSector * SectorSize);	
+                SectorSize, lastSector * SectorSize);	
 
-// copy in the bytes we want to change 
+    // copy in the bytes we want to change 
     bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
 
-// write modified sectors back
+    // write modified sectors back
     for (i = firstSector; i <= lastSector; i++)	
         synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-					&buf[(i - firstSector) * SectorSize]);
+                &buf[(i - firstSector) * SectorSize]);
     delete [] buf;
     return numBytes;
 #endif

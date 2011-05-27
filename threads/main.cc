@@ -104,7 +104,7 @@ int main(int argc, char **argv){
     }
 #if defined CHANGED && defined HW1_TIME
   ThreadTest(0);
-#elif defined CHANGED 
+#elif defined CHANGED && not defined FILESYS 
     for(int i = 0; i <= 4; i++){
         ThreadTest(i);
     }

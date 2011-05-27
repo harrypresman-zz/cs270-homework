@@ -137,7 +137,7 @@ void
 FileHeader::FetchFrom(int sector)
 {
     synchDisk->ReadSector(sector, (char *)this);
-    #ifdef FILESYS
+#ifdef FILESYS
     if (numSectors > NumDirect){
       for(int i = 0; i < numSectors- NumDirect; i++){
 	indirectPointers[i]->FetchFrom(indirectSector[i]);
@@ -239,12 +239,12 @@ FileHeader::Print()
     delete [] data;
 }
 
-int FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
+bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
     DEBUG('f',"Extending file by %d sectors\n",sectorsToAllocate);
 	if (sectorsToAllocate <= 0)
-		return -1;
+		return false;
     if (freeMap->NumClear() < sectorsToAllocate)
-        return -1;
+        return false;
 
 	int i = numSectors;	
 	while(sectorsToAllocate > 0){
@@ -269,5 +269,5 @@ int FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
 	    }
       
 	}   
-    return 0;
+    return true;
 }

@@ -19,7 +19,7 @@
 #include "IndirectPointerBlock.h"
 
 
-#define NumDirect 	4
+#define NumDirect 	    16
 #define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(IndirectPointerBlock*)+sizeof(int))
 #define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
 
@@ -59,7 +59,7 @@ class FileHeader {
 
     void Print();			// Print the contents of the file.
     
-    int ExtendFile(BitMap *freeMap, int sectors); //extend the file by N sectors
+    bool ExtendFile(BitMap *freeMap, int sectors); //extend the file by N sectors
 
   private:
     int numBytes;			// Number of bytes in the file

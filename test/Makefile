@@ -40,7 +40,8 @@ CFLAGS = -G 0 -c $(INCDIR)
 all: shell matmult sort halt halt2 cat cp mix_test mix_test1 mix_test2 ncat org\
 	test1 ncp ncp2 test2 test3 test3_1 test3_2 test4 test4_1 test4_2 test5 \
 	test5_2 test5_1 time_exec_nachos time_exec_in_nachos  \
-	time_no_join_nachos time_fork_nachos time_create_in_nachos time_open_in_nachos
+	time_no_join_nachos time_fork_nachos time_create_in_nachos \
+	time_open_in_nachos small_sort
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -58,6 +59,12 @@ sort.o: sort.c
 sort: sort.o start.o
 	$(LD) $(LDFLAGS) start.o sort.o -o sort.coff
 	../bin/coff2noff sort.coff sort
+
+small_sort.o: small_sort.c
+	$(CC) $(CFLAGS) -c small_sort.c
+small_sort: small_sort.o start.o
+	$(LD) $(LDFLAGS) start.o small_sort.o -o small_sort.coff
+	../bin/coff2noff small_sort.coff small_sort
 
 halt.o: halt.c
 	$(CC) $(CFLAGS) -c halt.c

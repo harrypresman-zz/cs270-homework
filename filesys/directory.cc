@@ -70,7 +70,7 @@ Directory::FetchFrom(OpenFile *file)
     DirectoryEntry* newTable = new DirectoryEntry[tableSize];
 
     for (int i = 0; i < tableSize; i++)
-	newTable[i].inUse = FALSE;
+        newTable[i].inUse = FALSE;
 
     delete table;
     table = newTable;    
