@@ -90,6 +90,12 @@ SynchDisk::ReadSector(int sectorNumber, char* data)
 void
 SynchDisk::WriteSector(int sectorNumber, char* data)
 {
+  
+    int *p = (int *) data;
+    DEBUG('x',"SynchDisk writing sector :%d :: |",sectorNumber );
+    for (unsigned int i = 0; i < (SectorSize/sizeof(int)); i++)
+	 DEBUG('x',"%x ", p[i]);
+    DEBUG('x',"|\n");   
     lock->Acquire();			// only one disk I/O at a time
     disk->WriteRequest(sectorNumber, data);
     semaphore->P();			// wait for interrupt

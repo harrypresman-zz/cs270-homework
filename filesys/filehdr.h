@@ -19,7 +19,7 @@
 #include "IndirectPointerBlock.h"
 
 
-#define NumDirect 	    16
+#define NumDirect 	    4
 #define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(IndirectPointerBlock*)+sizeof(int))
 #define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
 

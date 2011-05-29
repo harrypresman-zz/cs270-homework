@@ -67,9 +67,10 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 	    sectorsToAddToThisPage = MaxIndirectPointers;
 	  for (int j = 0 ; j < sectorsToAddToThisPage; j++){
 	  
-	    DEBUG('f', "." );
 	    //DEBUG('f', "Putting a sector to indirectPointer[%d].\n" , (i-NumDirect));
 	    int newSec = freeMap->Find();
+	    
+	    DEBUG('f', "-%d",newSec );
 	    indirectPointers[i-NumDirect]->PutSector(newSec);
 	    sectorsToAllocate--;
 	  }
@@ -140,7 +141,9 @@ FileHeader::FetchFrom(int sector)
 #ifdef FILESYS
     if (numSectors > NumDirect){
       for(int i = 0; i < numSectors- NumDirect; i++){
-	indirectPointers[i]->FetchFrom(indirectSector[i]);
+		DEBUG('f',"^^FileHdr Fetching IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
+		indirectPointers[i] = new IndirectPointerBlock();
+		indirectPointers[i]->FetchFrom(indirectSector[i]);
       }
     }
       
@@ -162,6 +165,8 @@ FileHeader::WriteBack(int sector)
 #ifdef FILESYS
     if (numSectors > NumDirect){
       for(int i = 0; i < numSectors- NumDirect; i++){
+	
+	DEBUG('f',"^^FileHdr Writing back IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
 	indirectPointers[i]->WriteBack(indirectSector[i]);
       }
     }
@@ -184,13 +189,19 @@ int
 FileHeader::ByteToSector(int offset)
 {
   #ifdef FILESYS
+    DEBUG('f',"BytoSector :%d : ",offset);
+    
     int sector = offset/ SectorSize;
     if (sector < NumDirect){
+      DEBUG('f',"Direct Sector offset %d, is at sector: %d\n",sector,dataSectors[sector]);     
       return dataSectors[sector];
     }
     else{
       int relSec = sector-NumDirect;
       int newOff = offset - 4*SectorSize - ((sector - 4)/SectorSize) * SectorSize;
+      
+      DEBUG('f',"Indirect Sector offset %d, with newoffset is at: is at %d sector: %d\n",relSec,newOff,indirectPointers[relSec]->ByteToSector(newOff));
+     
       return indirectPointers[relSec]->ByteToSector(newOff);
       
     }

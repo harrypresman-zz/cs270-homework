@@ -124,7 +124,7 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
     	return 0; 				// check request
     if ((position + numBytes) > fileLength)		
 	numBytes = fileLength - position;
-    DEBUG('f', "Reading %d bytes at %d, from file of length %d.\n", 	
+    DEBUG('x', "OpenFile::ReadAt Reading %d bytes at %d, from file of length %d.\n", 	
 			numBytes, position, fileLength);
 
     firstSector = divRoundDown(position, SectorSize);
@@ -133,9 +133,12 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
 
     // read in all the full and partial sectors that we need
     buf = new char[numSectors * SectorSize];
-    for (i = firstSector; i <= lastSector; i++)	
+    //bzero(buf,numSectors*SectorSize);
+    for (i = firstSector; i <= lastSector; i++)	{
+    	DEBUG('x',"Calling SyncDisk Read Sector for %d\n",hdr->ByteToSector(i * SectorSize));
         synchDisk->ReadSector(hdr->ByteToSector(i * SectorSize), 
 					&buf[(i - firstSector) * SectorSize]);
+	}
 
     // copy the part we want
     bcopy(buf + ( position - (firstSector * SectorSize) ), into, numBytes);
@@ -168,7 +171,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
     if (first_file_sector + num_sectors > SectorSize*NumSectors) {
         return 0;
     }
-    DEBUG('1', "Entering writeAt func...\n");
+    DEBUG('f', "Entering writeAt func...\n");
 
     // CASE 1
     if ((position + numBytes) <= fileLength) {
@@ -176,7 +179,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         if ((position + numBytes) > fileLength)
             numBytes = fileLength - position;
 
-        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+        DEBUG('1', "Writing %d bytes at %d, from file of length %d.\n", 	
                 numBytes, position, fileLength);
 
         firstSector = divRoundDown(position, SectorSize);
@@ -241,7 +244,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
             numBytes = fileLength - position;
         }
 
-        DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+        DEBUG('f', "Writing &buf[(i - firstSector) * SectorSize])%d bytes at %d, from file of length %d.\n", 	
                 numBytes, position, fileLength);
 
         firstSector = divRoundDown(position, SectorSize);
@@ -496,7 +499,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         return 0;				// check request
     if ((position + numBytes) > fileLength)
         numBytes = fileLength - position;
-    DEBUG('f', "Writing %d bytes at %d, from file of length %d.\n", 	
+    DEBUG('1', "XX Writing %d bytes at %d, from file of length %d.\n", 	
             numBytes, position, fileLength);
 
 
@@ -507,7 +510,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
     numSectors = 1 + lastSector - firstSector;
 
     buf = new char[numSectors * SectorSize];
-
+	bzero(buf, numSectors* SectorSize);
     firstAligned = (position == (firstSector * SectorSize));
     lastAligned = ((position + numBytes) == ((lastSector + 1) * SectorSize));
 

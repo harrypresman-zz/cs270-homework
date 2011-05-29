@@ -31,7 +31,7 @@
 void
 Copy(char *from, char *to)
 {
-	DEBUG('f',"Copying %s to %s \n",from,to);
+    DEBUG('f',"~~Copying %s to %s \n",from,to);
     FILE *fp;
     OpenFile* openFile;
     int amountRead, fileLength;
@@ -49,15 +49,17 @@ Copy(char *from, char *to)
     fseek(fp, 0, 0);
 
 // Create a Nachos file of the same length
-    DEBUG('f', "Copying file %s, size %d, to file %s\n", from, fileLength, to);
+    DEBUG('f', "~~Creating file %s, size %d, to file %s\n", from, fileLength, to);
     if (!fileSystem->Create(to, fileLength)) {	 // Create Nachos file
 	printf("Copy: couldn't create output file %s\n", to);
 	fclose(fp);
 	return;
     }
+    DEBUG('f', "~~Opening file for writing %s, size %d, to file %s\n", from, fileLength, to);
     
     openFile = fileSystem->Open(to);
     ASSERT(openFile != NULL);
+    DEBUG('f', "~~Copying data into file %s, size %d, to file %s\n", from, fileLength, to);
     
 // Copy the data in TransferSize chunks
     buffer = new char[TransferSize];

@@ -4,6 +4,9 @@
 
 IndirectPointerBlock::IndirectPointerBlock(){
   numSectors = 0 ; //start with none
+  for( int i=0; i< MaxIndirectPointers;i++ )
+    dataSectors[i]= 0;
+  
 }
 
 //----------------------------------------------------------------------
@@ -14,7 +17,13 @@ IndirectPointerBlock::IndirectPointerBlock(){
 //----------------------------------------------------------------------
 
 void IndirectPointerBlock::FetchFrom( int sector ) {
+    DEBUG('f',"IPB fetch from :%d\n",sector);
     synchDisk->ReadSector(sector, (char *)this);
+    /*char* buffer = new char[SectorSize];
+    synchDisk->ReadSector(sector, (char *)buffer);
+    memcpy((char*) this, buffer, SectorSize);
+    delete buffer;
+    */
 }
 
 //----------------------------------------------------------------------
@@ -25,7 +34,10 @@ void IndirectPointerBlock::FetchFrom( int sector ) {
 //----------------------------------------------------------------------
 
 void IndirectPointerBlock::WriteBack( int sector ) {
+    DEBUG('f',"IPB Write Back:%d :: |%x| sizeof(%d)\n",sector, (char *)this, sizeof(IndirectPointerBlock));
+      
     synchDisk->WriteSector(sector, (char *)this); 
+
 }
 
 //----------------------------------------------------------------------
