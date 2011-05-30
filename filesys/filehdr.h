@@ -20,7 +20,8 @@
 
 
 #define NumDirect 	    4
-#define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(IndirectPointerBlock*)+sizeof(int))
+#define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(int))
+#define HdrSize 		sizeof(int)*2 + sizeof(int)*NumDirect + sizeof(int)*NumInDirect
 #define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
 #define PointersPerIndirect 	((SectorSize - sizeof(int)) / sizeof(int))
 

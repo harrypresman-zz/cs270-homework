@@ -118,15 +118,15 @@ FileHeader::Deallocate(BitMap *freeMap)
             ASSERT(freeMap->Test((int) dataSectors[i]));  // ought to be marked!
             freeMap->Clear((int) dataSectors[i]);
         }
-        else{
-        #ifdef FILESYS
-		    indirectPointers[i-NumDirect]->Deallocate(freeMap);
-		    freeMap->Clear(indirectSector[i-NumDirect]);
-	#endif
-        }
     }
-    
-
+    #ifdef FILESYS    
+    int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
+    	
+    for(int i = 0; i < indirects; i++){
+        indirectPointers[i-NumDirect]->Deallocate(freeMap);
+	    freeMap->Clear(indirectSector[i-NumDirect]);
+	 }
+	#endif
 }
 
 //----------------------------------------------------------------------
@@ -139,19 +139,25 @@ FileHeader::Deallocate(BitMap *freeMap)
 void
 FileHeader::FetchFrom(int sector)
 {
-    synchDisk->ReadSector(sector, (char *)this);
+    
 #ifdef FILESYS
-    if (numSectors > NumDirect){
+	char* buf = new char[SectorSize];
+	bzero(buf,SectorSize);
+	synchDisk->ReadSector(sector, buf);
+	bcopy( buf,(char *) this, HdrSize);
+	if (numSectors > NumDirect){
         int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
     	
       	for(int i = 0; i < indirects; i++){
 	
 		DEBUG('f',"^^FileHdr fetchin IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
 		if (indirectSector[i] != 0)
+			indirectPointers[i] = new IndirectPointerBlock();
 			indirectPointers[i]->FetchFrom(indirectSector[i]);
       }
     }
-      
+#else
+	synchDisk->ReadSector(sector, (char *)this);      
       
 #endif
 }
@@ -166,8 +172,13 @@ FileHeader::FetchFrom(int sector)
 void
 FileHeader::WriteBack(int sector)
 {
-    synchDisk->WriteSector(sector, (char *)this); 
+    
 #ifdef FILESYS
+	char* buf = new char[SectorSize];
+	bzero(buf, SectorSize);
+	int t = HdrSize;
+	bcopy((char *) this, buf, HdrSize);
+	synchDisk->WriteSector(sector, buf); 
     if (numSectors > NumDirect){
 
         int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
@@ -179,8 +190,8 @@ FileHeader::WriteBack(int sector)
 			indirectPointers[i]->WriteBack(indirectSector[i]);
       }
     }
-      
-      
+#else       
+    synchDisk->WriteSector(sector, (char *)this);      
 #endif
 }
 
