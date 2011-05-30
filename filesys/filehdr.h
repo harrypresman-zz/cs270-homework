@@ -60,6 +60,7 @@ class FileHeader {
     void Print();			// Print the contents of the file.
     
     bool ExtendFile(BitMap *freeMap, int sectors); //extend the file by N sectors
+    void setNumBytes(int newBytes);
 
   private:
     int numBytes;			// Number of bytes in the file

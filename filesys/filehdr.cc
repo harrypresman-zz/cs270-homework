@@ -57,11 +57,13 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 	if (i < NumDirect){
 	  dataSectors[i] = freeMap->Find();
 	  sectorsToAllocate--;
+	  DEBUG('f', "\nAllocating new direct dataSector[%d]:%d\n" , (i),dataSectors[i]);
+	  
 	}
 	else{
 	  indirectPointers[i-NumDirect] = new IndirectPointerBlock();
 	  indirectSector[i-NumDirect] = freeMap->Find();
-	  DEBUG('f', "\nAllocating new indirectPointerBlock[%d]:" , (i-NumDirect));
+	  DEBUG('f', "\nAllocating new indirectPointerBlock[%d]:%d\n" , (i-NumDirect),indirectSector[i-NumDirect]);
 	  int sectorsToAddToThisPage = sectorsToAllocate;
 	  if (sectorsToAddToThisPage > MaxIndirectPointers)
 	    sectorsToAddToThisPage = MaxIndirectPointers;
@@ -250,8 +252,13 @@ FileHeader::Print()
     delete [] data;
 }
 
+void FileHeader::setNumBytes(int newBytes){
+	numBytes= newBytes;
+}
+
 bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
     DEBUG('f',"Extending file by %d sectors\n",sectorsToAllocate);
+    sectorsToAllocate -= numSectors;
 	if (sectorsToAllocate <= 0)
 		return false;
     if (freeMap->NumClear() < sectorsToAllocate)
@@ -261,7 +268,10 @@ bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
 	while(sectorsToAllocate > 0){
 	    if (i < NumDirect){
 	      dataSectors[i] = freeMap->Find();
+	      DEBUG('f', "\nAllocating new direct DataSector[%d]:%d\n" , (i),dataSectors[i]);
+	      
 	      sectorsToAllocate--;
+	      numSectors++;
 	    }
 	    else{
 	      indirectPointers[i-NumDirect] = new IndirectPointerBlock();
@@ -276,6 +286,7 @@ bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
 		    int newSec = freeMap->Find();
 		    indirectPointers[i-NumDirect]->PutSector(newSec);
 		    sectorsToAllocate--;
+		    numSectors++;
 	      }
 	    }
       
