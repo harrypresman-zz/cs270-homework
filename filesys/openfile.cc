@@ -248,6 +248,13 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
             synchDisk->WriteSector(sectToWrite,  &buf[locInBuf]);
         }
         delete [] buf;
+        
+        #ifdef USER_PROGRAM
+         int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+        #else
+         int pid =  0;        
+        #endif
+        DEBUG('3',"F [%d][%d]: [%d] -> [%d]\n", pid , hdrSector, hdr->FileLength(),numBytes+position);
         hdr->setNumBytes(numBytes+position);
         hdr->WriteBack(hdrSector);
         return numBytes;
@@ -290,6 +297,12 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
             synchDisk->WriteSector(sectToWrite,  &buf[locInBuf]);
         }
         delete [] buf;
+        #ifdef USER_PROGRAM
+         int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+        #else
+         int pid =  0;        
+        #endif
+        DEBUG('3',"F [%d][%d]: [%d] -> [%d]\n", pid , hdrSector, hdr->FileLength(),numBytes+position);
         hdr->setNumBytes(numBytes+start);
         hdr->WriteBack(hdrSector);
         return numBytes;

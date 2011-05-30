@@ -42,6 +42,10 @@ bool
 FileHeader::Allocate(BitMap *freeMap, int fileSize)
 { 
 #ifdef FILESYS
+	if (fileSize> MaxFileSize){
+		printf("Unable to save file, bigger than max file size %d\n",MaxFileSize);
+		return false;
+	}
     numBytes = fileSize;
     numSectors  = divRoundUp(fileSize, SectorSize);
     if (freeMap->NumClear() < numSectors)
