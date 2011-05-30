@@ -142,10 +142,13 @@ FileHeader::FetchFrom(int sector)
     synchDisk->ReadSector(sector, (char *)this);
 #ifdef FILESYS
     if (numSectors > NumDirect){
-      for(int i = 0; i < numSectors- NumDirect; i++){
-		DEBUG('f',"^^FileHdr Fetching IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
-		indirectPointers[i] = new IndirectPointerBlock();
-		indirectPointers[i]->FetchFrom(indirectSector[i]);
+        int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
+    	
+      	for(int i = 0; i < indirects; i++){
+	
+		DEBUG('f',"^^FileHdr fetchin IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
+		if (indirectSector[i] != 0)
+			indirectPointers[i]->FetchFrom(indirectSector[i]);
       }
     }
       
@@ -166,10 +169,14 @@ FileHeader::WriteBack(int sector)
     synchDisk->WriteSector(sector, (char *)this); 
 #ifdef FILESYS
     if (numSectors > NumDirect){
-      for(int i = 0; i < numSectors- NumDirect; i++){
+
+        int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
+    	
+      	for(int i = 0; i < indirects; i++){
 	
-	DEBUG('f',"^^FileHdr Writing back IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
-	indirectPointers[i]->WriteBack(indirectSector[i]);
+		DEBUG('f',"^^FileHdr Writing back IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
+		if (indirectSector[i] != 0)
+			indirectPointers[i]->WriteBack(indirectSector[i]);
       }
     }
       
@@ -199,11 +206,11 @@ FileHeader::ByteToSector(int offset)
       return dataSectors[sector];
     }
     else{
-      int relSec = sector-NumDirect;
-      int newOff = offset - 4*SectorSize - ((sector - 4)/SectorSize) * SectorSize;
+      int relSec = divRoundDown((numSectors - NumDirect),PointersPerIndirect);
+      int newOff = offset - SectorSize * (NumDirect);
       
-      DEBUG('f',"Indirect Sector offset %d, with newoffset is at: is at %d sector: %d\n",relSec,newOff,indirectPointers[relSec]->ByteToSector(newOff));
-     
+      DEBUG('f',"Indirect Sector offset %d, with newoffset is at: is at %d : \n",relSec,newOff);
+      DEBUG('f'," found at sector: %d\n",indirectPointers[relSec]->ByteToSector(newOff));
       return indirectPointers[relSec]->ByteToSector(newOff);
       
     }

@@ -22,6 +22,7 @@
 #define NumDirect 	    4
 #define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(IndirectPointerBlock*)+sizeof(int))
 #define MaxFileSize 	((NumDirect+(NumInDirect*MaxIndirectPointers )) * SectorSize)
+#define PointersPerIndirect 	((SectorSize - sizeof(int)) / sizeof(int))
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.

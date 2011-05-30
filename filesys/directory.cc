@@ -165,9 +165,10 @@ Directory::Add(char *name, int newSector)
     //we had no space lets allocate more
     int oldTableSize = tableSize;
     tableSize = (int)(oldTableSize * 1.5);
-    DEBUG('f',"** Extending table size from %d to %d \n", oldTableSize,tableSize);
-    DirectoryEntry *newTable = new DirectoryEntry[tableSize];
+    DEBUG('f',"** Extending table size from %d to %d - For file %s with hdr at sector %d\n", oldTableSize,tableSize,name,newSector);
     
+    DirectoryEntry *newTable = new DirectoryEntry[tableSize];
+    bzero(newTable,sizeof(DirectoryEntry)*tableSize);
     for (int i = 0; i < tableSize; i++){
       if (i < oldTableSize){
 	  //copy the old entries
