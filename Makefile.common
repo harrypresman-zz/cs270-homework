@@ -73,7 +73,6 @@ THREAD_O = main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
 	utility.o threadtest.o interrupt.o stats.o sysdep.o timer.o
 
 USERPROG_H = ../userprog/addrspace.h\
-	../userprog/bitmap.h\
 	../filesys/filesys.h\
 	../filesys/openfile.h\
 	../machine/console.h\
@@ -85,9 +84,9 @@ USERPROG_H = ../userprog/addrspace.h\
 	../userprog/sysOpenFile.h\
 	../userprog/userOpenFile.h\
 	../userprog/memoryManager.h \
+	../userprog/bitmap.h
 
 USERPROG_C = ../userprog/addrspace.cc\
-	../userprog/bitmap.cc\
 	../userprog/exception.cc\
 	../userprog/progtest.cc\
 	../machine/console.cc\
@@ -99,6 +98,7 @@ USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/sysOpenFile.cc\
 	../userprog/userOpenFile.cc\
 	../userprog/memoryManager.cc \
+	../userprog/bitmap.cc
 
 USERPROG_O = addrspace.o bitmap.o exception.o progtest.o console.o machine.o \
 	mipssim.o translate.o memoryManager.o processManager.o pcb.o userOpenFile.o sysOpenFile.o
@@ -126,8 +126,7 @@ FILESYS_H =../filesys/directory.h \
 	../filesys/openfile.h\
 	../filesys/synchdisk.h\
 	../machine/disk.h \
-	../filesys/IndirectPointerBlock.h\
-	../userprog/bitmap.h
+	../filesys/IndirectPointerBlock.h
 
 FILESYS_C =../filesys/directory.cc\
 	../filesys/filehdr.cc\
@@ -136,11 +135,10 @@ FILESYS_C =../filesys/directory.cc\
 	../filesys/openfile.cc\
 	../filesys/synchdisk.cc\
 	../machine/disk.cc \
-	../filesys/IndirectPointerBlock.cc\
-	../userprog/bitmap.cc
+	../filesys/IndirectPointerBlock.cc
 
 FILESYS_O =directory.o filehdr.o filesys.o fstest.o openfile.o synchdisk.o \
-	disk.o IndirectPointerBlock.o bitmap.o
+	disk.o IndirectPointerBlock.o
 
 NETWORK_H = ../network/post.h ../machine/network.h
 NETWORK_C = ../network/nettest.cc ../network/post.cc ../machine/network.cc
