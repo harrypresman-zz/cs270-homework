@@ -96,7 +96,7 @@ int VMManager::getPhysicalPage( TranslationEntry* page ){
 // remove page from active map, clear in swap mgr
 void VMManager::clearPage( int sPage ){
     int pPage;
-    DEBUG( '3', "Clearing page %d\n", pPage );
+    DEBUG( 'v', "Clearing page %d\n", pPage );
     for( pPage = 0; pPage < NumPhysPages; pPage++ ){
         if( activePageMap[ pPage ] == sPage ){
             activePageMap[ pPage ] = -1;
