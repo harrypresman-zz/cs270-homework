@@ -147,14 +147,7 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
 }
 
 
-BitMap* getFreeMap(){
-	DEBUG('f', "opening free \n");
-	OpenFile* freeMapFile = new OpenFile(FreeMapSector);
-    BitMap* freeMap = new BitMap(NumSectors);
-    DEBUG('f', "Fetching free Map\n");
-    freeMap->FetchFrom(freeMapFile);
-    return freeMap;
-}
+
 
 int OpenFile::WriteAt(char *from, int numBytes, int position){
 #ifdef FILESYS
@@ -173,9 +166,11 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
     if (total_length < fileLength) total_length =fileLength;
     int num_sectors = divRoundUp(total_length, SectorSize);
     int first_file_sector = hdr->ByteToSector(0); // Assume files start at beginning of sector
+    
 
+    
 
-    DEBUG('f', "Entering writeAt func...\n");
+    DEBUG('f', "Entering writeAt func... numBytes:%d position:%d\n",numBytes,position);
 
     
     if ((position + numBytes) <= fileLength) { // CASE 1 inside of the file
@@ -196,8 +191,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         if (!firstAligned)
             ReadAt(buf, SectorSize, firstSector * SectorSize);	
         if (!lastAligned && ((firstSector != lastSector) || firstAligned))
-            ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-                    SectorSize, lastSector * SectorSize);	
+            ReadAt(&buf[(lastSector - firstSector) * SectorSize],  SectorSize, lastSector * SectorSize);	
 
         // copy in the bytes we want to change 
         bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
@@ -215,8 +209,8 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         firstSector = divRoundDown(start, SectorSize);
         lastSector = divRoundDown(position + numBytes - 1, SectorSize);
         numSectors = 1 + lastSector - firstSector;
-        BitMap* freeMap = getFreeMap();    	
-        if (hdr->ExtendFile(freeMap, numSectors) == -1){
+    	
+        if (hdr->ExtendFile(numSectors) == -1){
             bool noSpace = false;
             ASSERT(noSpace);
         }
@@ -250,22 +244,22 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         delete [] buf;
         
         #ifdef USER_PROGRAM
-         int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+		  int pid =  ((currentThread->space != NULL && currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
         #else
          int pid =  0;        
         #endif
         DEBUG('3',"F [%d][%d]: [%d] -> [%d]\n", pid , hdrSector, hdr->FileLength(),numBytes+position);
         hdr->setNumBytes(numBytes+position);
         hdr->WriteBack(hdrSector);
-        return numBytes;
+
     }
     else if (position >= fileLength) {     // CASE 3 appending the file
         int start = fileLength; // we need to start adding sectors from end of the file
         firstSector = divRoundDown(start, SectorSize);
         lastSector = divRoundDown(position + numBytes - 1, SectorSize);
         numSectors = 1 + lastSector - firstSector;
-        BitMap* freeMap = getFreeMap();    	
-        if (hdr->ExtendFile(freeMap, numSectors) == -1){
+  	
+        if (hdr->ExtendFile( numSectors) == -1){
             bool noSpace = false;
             ASSERT(noSpace);
         }
@@ -298,16 +292,15 @@ int OpenFile::WriteAt(char *from, int numBytes, int position){
         }
         delete [] buf;
         #ifdef USER_PROGRAM
-         int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+     		int pid =  ((currentThread->space != NULL && currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
         #else
          int pid =  0;        
         #endif
         DEBUG('3',"F [%d][%d]: [%d] -> [%d]\n", pid , hdrSector, hdr->FileLength(),numBytes+position);
         hdr->setNumBytes(numBytes+start);
         hdr->WriteBack(hdrSector);
-        return numBytes;
-    }
 
+    }
 
     return numBytes;    
 

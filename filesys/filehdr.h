@@ -18,7 +18,8 @@
 #include "bitmap.h"
 #include "IndirectPointerBlock.h"
 
-
+#define FreeMapSector 		0
+#define DirectorySector 	1
 #define NumDirect 	    4
 #define NumInDirect 	(SectorSize -(2 * sizeof(int) + NumDirect * sizeof(int)))/(sizeof(int))
 #define HdrSize 		sizeof(int)*2 + sizeof(int)*NumDirect + sizeof(int)*NumInDirect
@@ -61,7 +62,7 @@ class FileHeader {
 
     void Print();			// Print the contents of the file.
     
-    bool ExtendFile(BitMap *freeMap, int sectors); //extend the file by N sectors
+    bool ExtendFile( int sectors); //extend the file by N sectors
     void setNumBytes(int newBytes);
 
   private:

@@ -117,19 +117,24 @@ FileHeader::Deallocate(BitMap *freeMap)
 
 
     for (int i = 0; i < numSectors; i++) {
-        printf("Delloc %d (%d)\n",numSectors, NumDirect);
+        DEBUG('f',"Delloc %d (%d)\n",numSectors, NumDirect);
         if (numSectors < NumDirect){
             ASSERT(freeMap->Test((int) dataSectors[i]));  // ought to be marked!
             freeMap->Clear((int) dataSectors[i]);
         }
     }
     #ifdef FILESYS    
-    int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
-    	
-    for(int i = 0; i < indirects; i++){
-        indirectPointers[i-NumDirect]->Deallocate(freeMap);
-	    freeMap->Clear(indirectSector[i-NumDirect]);
-	 }
+    
+    if(numSectors > NumDirect){
+		int secs = numSectors;
+		if (secs > NumDirect) secs -= NumDirect;
+		int indirects = divRoundUp(secs,PointersPerIndirect);
+			
+		for(int i = 0; i < indirects; i++){
+		    indirectPointers[i]->Deallocate(freeMap);
+			freeMap->Clear(indirectSector[i]);
+		 }
+	}
 	#endif
 }
 
@@ -149,15 +154,17 @@ FileHeader::FetchFrom(int sector)
 	bzero(buf,SectorSize);
 	synchDisk->ReadSector(sector, buf);
 	bcopy( buf,(char *) this, HdrSize);
+	DEBUG('f',"FileHdr fetched num Sectors:%d at sec:%d\n",numSectors,sector);
 	if (numSectors > NumDirect){
         int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
-    	
       	for(int i = 0; i < indirects; i++){
-	
-		DEBUG('f',"^^FileHdr fetchin IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
-		if (indirectSector[i] != 0)
-			indirectPointers[i] = new IndirectPointerBlock();
-			indirectPointers[i]->FetchFrom(indirectSector[i]);
+	    	DEBUG('f',"FileHdr fetch numSectors:%d numIndirects:%d\n",numSectors, indirects);
+
+			if (indirectSector[i] != 0){
+				DEBUG('f',"^^FileHdr fetchin IndirectPointer[%d] at sector:%d\n",i,indirectSector[i]);
+				indirectPointers[i] = new IndirectPointerBlock();
+				indirectPointers[i]->FetchFrom(indirectSector[i]);
+			}
       }
     }
 #else
@@ -183,6 +190,8 @@ FileHeader::WriteBack(int sector)
 	int t = HdrSize;
 	bcopy((char *) this, buf, HdrSize);
 	synchDisk->WriteSector(sector, buf); 
+	
+	DEBUG('f',"FileHdr writeBack num Sectors:%d at sec:%d\n",numSectors,sector);
     if (numSectors > NumDirect){
 
         int indirects = divRoundUp((numSectors - NumDirect),PointersPerIndirect);
@@ -278,11 +287,18 @@ void FileHeader::setNumBytes(int newBytes){
 	numBytes= newBytes;
 }
 
-bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
+bool FileHeader::ExtendFile( int sectorsToAllocate){
     DEBUG('f',"Extending file by %d sectors\n",sectorsToAllocate);
     sectorsToAllocate -= numSectors;
 	if (sectorsToAllocate <= 0)
 		return false;
+		
+	DEBUG('f', "opening free \n");
+	OpenFile* freeMapFile = new OpenFile(FreeMapSector);
+    BitMap* freeMap = new BitMap(NumSectors);
+    DEBUG('f', "Fetching free Map\n");
+    freeMap->FetchFrom(freeMapFile);
+    
     if (freeMap->NumClear() < sectorsToAllocate)
         return false;
 
@@ -313,5 +329,9 @@ bool FileHeader::ExtendFile(BitMap *freeMap, int sectorsToAllocate){
 	    }
       
 	}   
+	
+	freeMap->WriteBack(freeMapFile);
+	delete freeMap;
+	delete freeMapFile;
     return true;
 }

@@ -17,8 +17,9 @@ IndirectPointerBlock::IndirectPointerBlock(){
 //----------------------------------------------------------------------
 
 void IndirectPointerBlock::FetchFrom( int sector ) {
-    DEBUG('f',"IPB fetch from :%d\n",sector);
+
     synchDisk->ReadSector(sector, (char *)this);
+    DEBUG('f',"IPB fetch from :%d numSectors:%d\n",sector, numSectors);
     /*char* buffer = new char[SectorSize];
     synchDisk->ReadSector(sector, (char *)buffer);
     memcpy((char*) this, buffer, SectorSize);

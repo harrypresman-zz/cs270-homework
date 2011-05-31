@@ -90,7 +90,13 @@ SynchDisk::ReadSector(int sectorNumber, char* data)
 void
 SynchDisk::WriteSector(int sectorNumber, char* data)
 {
-  
+  	if(sectorNumber ==0){
+ 		int *p = (int *) data;
+		DEBUG('f',"|||| SynchDisk writing sector :%d :: |",sectorNumber );
+		for (unsigned int i = 0; i < (SectorSize/sizeof(int)); i++)
+		 DEBUG('f',"%x ", p[i]);
+		DEBUG('f',"|\n");   
+  	}
     int *p = (int *) data;
     DEBUG('x',"SynchDisk writing sector :%d :: |",sectorNumber );
     for (unsigned int i = 0; i < (SectorSize/sizeof(int)); i++)

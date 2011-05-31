@@ -157,6 +157,8 @@ Directory::Add(char *name, int newSector)
 
     for (int i = 0; i < tableSize; i++)
         if (!table[i].inUse) {
+        
+        	DEBUG('f',"Adding file %s hdr at sector: %d\n",name,newSector);
             table[i].inUse = TRUE;
             strncpy(table[i].name, name, FileNameMaxLen); 
             table[i].sector = newSector;
@@ -168,7 +170,7 @@ Directory::Add(char *name, int newSector)
     tableSize = (int)(oldTableSize * 1.5);
     DEBUG('f',"** Extending table size from %d to %d - For file %s with hdr at sector %d\n", oldTableSize,tableSize,name,newSector);
     #ifdef USER_PROGRAM
-     int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+     int pid =  ((currentThread->space != NULL && currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
     #else
      int pid =  0;        
     #endif
@@ -216,7 +218,6 @@ bool
 Directory::Remove(char *name)
 { 
     int i = FindIndex(name);
-
     if (i == -1)
 	return FALSE; 		// name not in directory
     table[i].inUse = FALSE;

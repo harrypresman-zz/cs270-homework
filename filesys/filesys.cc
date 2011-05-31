@@ -185,6 +185,7 @@ FileSystem::Create(char *name, int initialSize)
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
+    dirHdr->FetchFrom(DirectorySector);
     if (directory->Find(name) != -1)
         success = FALSE;			// file is already in directory
     else {	

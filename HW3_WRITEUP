@@ -1,0 +1,73 @@
+HW3_WRITEUP
+
+Aaron Elmore and Harry Presman 
+
+We are free for any remaining office hours.
+
+All HW required output is accessed by the debug flag 3
+ie  filesys/nachos -f -cp filesys/test/big 1 -d 3
+
+Part I
+======================================
+    For this assignment, you will need to read and write data to the backing store, which should be a file called SWAP. The swap file should be accessed using the NACHOS OpenFile class. You can use the filesystem stub routines (the default), so that the SWAP file is created as a Unix file. You donot need to test again later using Part 2.
+
+    Implement a page fault handler and a page replacement policy using LRU or FIFO with second chance. The page table should contain dirty bits to avoid unnecessary disk write.
+
+    Measure and report the average latency in accessing a data item with and without page fault. 
+
+Random replacement
+4.214s -- small_sort - pages 32 faults 31
+4.322s -- small_sort - pages 16 faults 1155
+4.759s -- small_sort - pages 8 faults 8831
+5.747s -- small_sort - pages 4 faults 473480
+7.900s -- small_sort - pages 2 faults 1971780
+
+FIFO
+4.211s -- small_sort - pages 32 faults 31
+4.433s -- small_sort - pages 16 faults 2663
+4.586s -- small_sort - pages 8 faults 7564
+5.986s -- small_sort - pages 4 faults 658123
+7.547s -- small_sort - pages 2 faults 1782685
+
+LRU
+5.602s -- small_sort - pages 32 faults 31
+5.658s -- small_sort - pages 16 faults 2044
+5.317s -- small_sort - pages 8 faults 4220
+5.838s -- small_sort - pages 4 faults 501634
+7.480s -- small_sort - pages 2 faults 1385567
+
+Part II
+======================================
+
+Max File Size using Indirect Pointer: Works well. With  Sector Size:128 we use 4 Max Direct sectors, 26 max IndirectPointerBlocks (IPB). 31 Sectors per Indirect Block Max File Size:103680  FileHdr stores numSectors, numBytes, directSectors, and an array of ints for sectors holding IPBs. On fetch from IPBs are loaded. Only allocate sectors as needed. Extend in header loads freemap, extends and persists freemap. 
+
+Extensible Files: Works based on fileHdr.numBytes and writeAt Position and Numbytes. Can handle writing in file with overflow, and appends. Leverages fileHdr extend. If not aligned, reads in sector before writing (some of this logic is used from sample).
+
+Extensible Directory: Tables are made extensible by growing by 1.5 size when no free directoryEntries are found.  The directory object is extended and the tableSize is persisted at the top of the file.  This size is read in to determine how much of the file should be read in, with a read for the rest of the directory object. Each sector for the directory is located by the dirctoryHeader byte to sector  and allows for extensible files with gaps.
+
+Issues to consider:
+(Good) Be sure your file header is not larger than one disk sector.
+(Good) Be sure to support direct file access with "holes" in the file. 
+(Good) The exception is that if the file is created to be a given size, your implementation should allocate as many sectors as required to hold that amount of data.
+(Good) Be sure to implement extensible files - if the program writes beyond the end of the file, be sure to automatically extend the file to hold the written data.
+(Good) Be sure to gracefully handle the case when the program attempts to write more data to the disk when disk is full or the maximum size limit is reached.
+(Good) Be sure to reclaim the disk blocks when a file is removed (e.g. use nachos -r ).
+(Good) Be sure that each disk block is allocated to at most one file. 
+
+CANNOT run with swap space, we designed a unix style system where swap sits outside of the filesystem (seperate stub partition).
+
+Testing: 
+------------
+-filesys/nachos -cp test/small_sort ss -x ss -d 2
+Gives same reulst as executing small_sort
+
+-Set default Dir size to test extensible directory and file size. 5th file grows:D [0][1]: [4] -> [6], 7th file grows dirTable size and file size (needs 2nd sector)
+D [0][1]: [6] -> [9]
+F [0][1]: [80] -> [184] this is a sample of the file object gr
+
+-Created a 'XL' file that goes to 2k.
+filesys/nachos -cp filesys/test/xal x -d 3 -p x
+
+-Tested various create and delete scenarios.
+
+
