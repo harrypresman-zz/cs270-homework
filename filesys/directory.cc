@@ -24,6 +24,7 @@
 #include "utility.h"
 #include "filehdr.h"
 #include "directory.h"
+#include "system.h"
 
 //----------------------------------------------------------------------
 // Directory::Directory
