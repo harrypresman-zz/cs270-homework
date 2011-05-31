@@ -104,6 +104,7 @@ AddrSpace::AddrSpace(OpenFile *executable){
     for( i = 0; i < numPages; i++ ){
 #ifdef VM
         int pageNum = vmMgr->getPage();
+		DEBUG('3',"Z [%d]: [%d]\n", pcb->PID, i);
 #else
         int pageNum = memMgr->getPage();
         ASSERT( pageNum >= 0 );
@@ -171,6 +172,8 @@ bool AddrSpace::CopyAddrSpace(AddrSpace* spaceDest){
     for (int i = 0; i < numPages; i++) {
 #ifdef VM
         int pageNum = vmMgr->getPage();
+        
+		DEBUG('3',"Z [%d]: [%d]\n", pcb->PID, i);
 #else
         int pageNum = memMgr->getPage();
 #endif

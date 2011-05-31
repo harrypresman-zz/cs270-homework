@@ -40,7 +40,11 @@ int VMManager::swap( TranslationEntry* newPage ){
     int pPage;
     int sPage = newPage->physicalPage;
     int oldPage = -1;
-
+	#ifdef USER_PROGRAM
+	int pid =  ((currentThread->space->pcb != NULL) ?  pid = currentThread->space->pcb->PID : 0 );
+	#else
+	int pid =  0;        
+	#endif
     if( memMgr->getFreePageCount() > 0 ){
         pPage = memMgr->getPage();
         policy->pageUsed( pPage );
@@ -52,19 +56,26 @@ int VMManager::swap( TranslationEntry* newPage ){
         activePages[ pPage ]->use = false;
         if( activePages[ pPage ]->dirty ){
             activePages[ pPage ]->dirty = false;
-            DEBUG( '3', "Old page %d is dirty, writing to swap!\n", oldPage );
+       		DEBUG('3',"S [%d]: [%d]\n", pid, pPage);
+
+            DEBUG( 'v', "Old page %d is dirty, writing to swap!\n", oldPage );
             bcopy( machine->mainMemory + pPage * PageSize, diskBuffer, PageSize );
             swapMgr->writePage( activePageMap[ pPage ], diskBuffer, PageSize, 0 );
-        }
+        } else{
+	        DEBUG('3',"E [%d]: [%d]\n", pid, pPage);
+        }        
     }
+    
 
     // swap new page in
-    DEBUG( '3', "Swapping out page %d, swapping in swap page %d to physical page %d\n",
+
+    DEBUG( 'v', "Swapping out page %d, swapping in swap page %d to physical page %d\n",
            oldPage, sPage, pPage );
     swapMgr->swap( pPage, sPage );
     activePageMap[ pPage ] = sPage;
     activePages[ pPage ] = newPage;
-
+    
+	DEBUG('3',"L [%d]: [%d] -> [%d]\n", pid, oldPage, pPage);
     return pPage;
 }
 
