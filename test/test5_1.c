@@ -4,8 +4,6 @@
 
 #include "syscall.h"
 
-int main()
-{
+int main(){
   Write( "Test5: This is test 5_1\n", 24, ConsoleOutput );
-  Exit( 0 );
 }

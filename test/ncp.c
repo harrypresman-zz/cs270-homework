@@ -15,6 +15,8 @@ int main(int argc, char **argv)
     int i, j;
     int readnum;
 
+    Write("push page\n", 12, output);
+
     Write(prompt1, 12, output);
 
     i = 0;

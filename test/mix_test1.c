@@ -4,33 +4,35 @@ void test_function2()
 {
   int i=0;
   
-  OpenFileId OutFid, InFid;
+//  OpenFileId OutFid, InFid;
 
-  Write("# FORKED 2-1 !!\n", 20, ConsoleOutput);
-  Write("# FORKED 2-2 !!\n", 23, ConsoleOutput);
+  Write("# FORKED 2-1 !!\n", 16, ConsoleOutput);
+  Write("# FORKED 2-2 !!\n", 16, ConsoleOutput);
   
   /* maintain this function in memory */
   for( i=0 ; i < 10 ; ++i ) Yield();
+  Exit(0);
   
 }
 
 void test_function3()
 {
 
-  Write("# FORKED 3-1 !!\n", 22, ConsoleOutput);
-  Write("# FORKED 3-2 !!\n", 25, ConsoleOutput);
+  Write("# FORKED 3-1 !!\n", 16, ConsoleOutput);
+  Write("# FORKED 3-2 !!\n", 16, ConsoleOutput);
   Yield();
+  Exit(0);
 }
 
-char temp[2500];
+//char temp[2500];
 int
 main()
 {
    
     OpenFileId OutFid, InFid;
-    int ret =335;
+    //int ret = 335;
     int size = 9;
-    int stub =3;
+    //int stub = 3;
     char buffer[20];
     
     InFid = Open("out");    
@@ -40,18 +42,18 @@ main()
     
     Fork(test_function2);
     
-    Write("This is Test1\n", 21, OutFid);
+    Write("This is Test1\n", 14, OutFid);
     
     Read(buffer, size, InFid);
     Write(buffer, size, OutFid);
     Yield(); 
 
-    Write("Second write!\n", 22, OutFid);
+    Write("Second write!\n", 14, OutFid);
 
 	Fork(test_function3);
 
     Yield();
-    Write("Third write!\n", 24, OutFid);
+    Write("Third write!\n", 14, OutFid);
     Close(InFid);
     Close(OutFid);
     

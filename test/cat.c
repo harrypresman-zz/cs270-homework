@@ -7,7 +7,7 @@ int main() {
     int count;
 
     src = Open("out");
-    if (src < 0) Exit(100);
+    if( src < 0 ) Exit(100);
 
     while( ( count = Read(buf, 5, src) ) > 0 )
         Write(buf, count, ConsoleOutput);
