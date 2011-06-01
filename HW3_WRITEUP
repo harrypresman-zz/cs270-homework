@@ -5,15 +5,26 @@ Aaron Elmore and Harry Presman
 We are free for any remaining office hours.
 
 All HW required output is accessed by the debug flag 3
-ie  filesys/nachos -f -cp filesys/test/big 1 -d 3
+ie:  
+    filesys/nachos -f -cp filesys/test/big 1 -d 3
+or:
+    vm/nachos -x test/multi_sort -d 3 -rs 10101
 
 Part I
 ======================================
-    For this assignment, you will need to read and write data to the backing store, which should be a file called SWAP. The swap file should be accessed using the NACHOS OpenFile class. You can use the filesystem stub routines (the default), so that the SWAP file is created as a Unix file. You donot need to test again later using Part 2.
+Modified code for part 1:
+        Everything in the VM directory.
+        Most of the Makefiles ( to get the VM and Filesys to compile orthogonally )
+        machine/translate.*
+        userprog/addrspace.*
+        threads/system.*
 
-    Implement a page fault handler and a page replacement policy using LRU or FIFO with second chance. The page table should contain dirty bits to avoid unnecessary disk write.
+    1. The SWAP is created as a 512 page file.  Pages are allocated and initialized on address space creation and loaded on demand.  The address space page table begins empty, so virtual pages are mapped to their allocated swap page, with use set to false.  Because of the decision to have each address space's table map virtual pages to swap pages, a new translate function (called on the global vmMgr object and passed through to the swapMgr) to translate swap pages numbers to physical page numbers was needed.
 
-    Measure and report the average latency in accessing a data item with and without page fault. 
+    2. The page fault handler is called when a page's use bit is set to false.  The handler simply calls the vmMgr getReplacement function to swap the new page in, and if necessary, write and/or swap the old page out.  If the page's dirty bit is set, we write to SWAP and reset that bit to false.  
+    We have implemented three replacement policies, each using a common policy interface.  We implemented LRU, FIFO and RandomReplacement policies, and the policy is chosen by creating that policy object and assigning it to an IReplacementPolicy reference in the VMManager initializer.
+
+    3. Timing measurements are reported below.  Each policy was run and timed using the shell 'time' function using various numbers of physical pages.  RandomReplacement and FIFO were fastest with larger page sizes, probably due to the LRU policy having to shuffle pages every time the page is read.  With smaller page sizes, the LRU policy performs the best, probably because the savings from swapping less are more than the cost of marking and shuffling a small nummber of pages.  Data access latency can be roughly inferred from these measurements, but true cost cannot be measured with our timing method.
 
 Random replacement
 4.214s -- small_sort - pages 32 faults 31
@@ -36,6 +47,9 @@ LRU
 5.838s -- small_sort - pages 4 faults 501634
 7.480s -- small_sort - pages 2 faults 1385567
 
+Testing:
+We tested the VM code with each of the test programs, and everything ran smoothly (after fixing almost all the programs).  We also implemented a few extra tests and these can be found in the submitted test directory.  The fixed 'sort' uses more space than physical memory, 'multi_sort' with random interrupts enabled tests large memory spaces + process switching.
+
 Part II
 ======================================
 
@@ -54,12 +68,12 @@ Issues to consider:
 (Good) Be sure to reclaim the disk blocks when a file is removed (e.g. use nachos -r ).
 (Good) Be sure that each disk block is allocated to at most one file. 
 
-CANNOT run with swap space, we designed a unix style system where swap sits outside of the filesystem (seperate stub partition).
+CANNOT run with swap space, we designed a unix style system where swap sits outside of the filesystem (separate stub partition).
 
 Testing: 
 ------------
 -filesys/nachos -cp test/small_sort ss -x ss -d 2
-Gives same reulst as executing small_sort
+Gives same result as executing small_sort
 
 -Set default Dir size to test extensible directory and file size. 5th file grows:D [0][1]: [4] -> [6], 7th file grows dirTable size and file size (needs 2nd sector)
 D [0][1]: [6] -> [9]
