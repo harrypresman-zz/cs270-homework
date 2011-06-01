@@ -50,6 +50,18 @@ LRU
 Testing:
 We tested the VM code with each of the test programs, and everything ran smoothly (after fixing almost all the programs).  We also implemented a few extra tests and these can be found in the submitted test directory.  The fixed 'sort' uses more space than physical memory, 'multi_sort' with random interrupts enabled tests large memory spaces + process switching.
 
+Copy-on-Write
+-----------------
+when a (new) page is added the swap manager does a hash on the new page, and
+compares against hash of all existing patches. If a match is found
+then a bit compare is done to ensure no false positive matches. The new page
+is added as a virtual pointer to the copy. The page will need a counter
+added to it to show the number of pages using this page. A counter of one means this
+pages is not shared. If either the original or the copy dirties the page, 
+then before the dirty (write),a copy needs to occur, the counters reset. 
+and the virtual pointer (or page) needs to point to its own copy of the page.
+
+
 Part II
 ======================================
 
@@ -69,6 +81,8 @@ Issues to consider:
 (Good) Be sure that each disk block is allocated to at most one file. 
 
 CANNOT run with swap space, we designed a unix style system where swap sits outside of the filesystem (separate stub partition).
+
+Primary files modified include FileSystem (create), FileHeader (most), IndirectPointerBlock (new), OpenFile (write at), Directory (Fetch,Save, and Add)
 
 Testing: 
 ------------
